@@ -14,16 +14,7 @@ top::Decl ::= params::Names adt::ADTDecl
   forwards to
     decls(
       foldDecl([
-        defsDecl([
-          templateDef(
-            adt.name,
-            templateItem(
-              true, false, adt.location, params.names,
-              case adt of
-              | adtDecl(n, cs) ->
-                \ mangledName::Name ->
-                  templateDatatypeInstDecl(n.name, adtDecl(mangledName, cs, location=adt.location))
-              end))]),
+        defsDecl([templateDef(adt.name, adtTemplateItem(params.names, adt))]),
         if null(params.typeParameterErrors)
         then adt.templateTransform
         else warnDecl(params.typeParameterErrors)]));
@@ -43,14 +34,18 @@ autocopy attribute topTypeParameters :: Names occurs on ADTDecl, ConstructorList
 inherited attribute declTypeName :: String occurs on ADTDecl;
 
 synthesized attribute templateTransform :: Decl occurs on ADTDecl;
+synthesized attribute instDecl :: (Decl ::= Name) occurs on ADTDecl;
 synthesized attribute instDeclTransform :: Decls occurs on ADTDecl;
 
-flowtype ADTDecl = templateTransform {decorate, topTypeParameters, adtGivenName}, instDeclTransform {decorate, adtGivenName};
+flowtype ADTDecl = templateTransform {decorate, topTypeParameters, adtGivenName}, instDecl {decorate}, instDeclTransform {decorate, adtGivenName};
 
 aspect production adtDecl
 top::ADTDecl ::= n::Name cs::ConstructorList
 {
   top.templateTransform = decls(consDecl(adtEnumDecl, cs.templateFunDecls));
+  top.instDecl =
+    \ mangledName::Name ->
+      templateDatatypeInstDecl(n.name, adtDecl(mangledName, cs, location=top.location));
   
   -- Evaluated on substituted version of the tree
   top.instDeclTransform =
