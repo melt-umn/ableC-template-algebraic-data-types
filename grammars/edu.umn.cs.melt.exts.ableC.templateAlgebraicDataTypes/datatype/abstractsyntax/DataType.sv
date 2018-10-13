@@ -8,13 +8,13 @@ top::Decl ::= params::Names adt::ADTDecl
     pp"template<", ppImplode(text(", "), params.pps), pp">", line(),
     text("datatype"), space(), adt.pp]);
   
-  adt.topTypeParameters = params;
+  adt.typeParameters = params;
   adt.adtGivenName = adt.name;
   
   forwards to
     decls(
       foldDecl([
-        defsDecl([templateDef(adt.name, adtTemplateItem(params.names, adt))]),
+        defsDecl([templateDef(adt.name, adtTemplateItem(params, adt))]),
         if null(params.typeParameterErrors)
         then adt.templateTransform
         else warnDecl(params.typeParameterErrors)]));
@@ -30,14 +30,14 @@ top::Decl ::= declTypeName::String adt::ADTDecl
   forwards to decls(adt.instDeclTransform);
 }
 
-autocopy attribute topTypeParameters :: Names occurs on ADTDecl, ConstructorList, Constructor;
+autocopy attribute typeParameters :: Names occurs on ADTDecl, ConstructorList, Constructor;
 inherited attribute declTypeName :: String occurs on ADTDecl;
 
 synthesized attribute templateTransform :: Decl occurs on ADTDecl;
 synthesized attribute instDecl :: (Decl ::= Name) occurs on ADTDecl;
 synthesized attribute instDeclTransform :: Decls occurs on ADTDecl;
 
-flowtype ADTDecl = templateTransform {decorate, topTypeParameters, adtGivenName}, instDecl {decorate}, instDeclTransform {decorate, adtGivenName};
+flowtype ADTDecl = templateTransform {decorate, typeParameters, adtGivenName}, instDecl {decorate}, instDeclTransform {decorate, adtGivenName};
 
 aspect production adtDecl
 top::ADTDecl ::= n::Name cs::ConstructorList
@@ -79,10 +79,10 @@ top::Constructor ::= n::Name ps::Parameters
 {
   top.templateFunDecl =
     ableC_Decl {
-      template<$Names{top.topTypeParameters}>
-      inst $tname{top.adtGivenName}<$TypeNames{top.topTypeParameters.asTypeNames}>
+      template<$Names{top.typeParameters}>
+      inst $tname{top.adtGivenName}<$TypeNames{top.typeParameters.asTypeNames}>
         $Name{n}($Parameters{ps}) {
-        inst $tname{top.adtGivenName}<$TypeNames{top.topTypeParameters.asTypeNames}>
+        inst $tname{top.adtGivenName}<$TypeNames{top.typeParameters.asTypeNames}>
           result;
         result.tag = $name{top.adtGivenName ++ "_" ++ n.name};
         $Stmt{ps.asAssignments}
@@ -98,9 +98,7 @@ aspect production consName
 top::Names ::= h::Name t::Names
 {
   top.asTypeNames =
-    consTypeName(
-      typeName(typedefTypeExpr(nilQualifier(), h), baseTypeExpr()),
-      t.asTypeNames);
+    consTypeName(typeName(typedefTypeExpr(nilQualifier(), h), baseTypeExpr()), t.asTypeNames);
 }
 
 aspect production nilName
