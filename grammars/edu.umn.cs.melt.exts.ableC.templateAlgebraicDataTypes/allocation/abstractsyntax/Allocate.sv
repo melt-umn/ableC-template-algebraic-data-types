@@ -123,11 +123,12 @@ top::Expr ::= adtName::Name allocatorName::Name constructorName::Name ts::TypeNa
   args.callExpr = decorate declRefExpr(n, location=n.location) with {env = top.env; returnType = top.returnType;};
   args.callVariadic = false;
   
+  local resultName::String = "result_" ++ toString(genInt());
   local fwrd::Expr =
     ableC_Expr {
-      ({inst $TName{adtName}<$TypeNames{ts}> *result = $Name{allocatorName}(sizeof(inst $TName{adtName}<$TypeNames{ts}>));
-        *result = inst $Name{constructorName}<$TypeNames{ts}>($Exprs{args});
-        result;})
+      ({inst $TName{adtName}<$TypeNames{ts}> *$name{resultName} = $Name{allocatorName}(sizeof(inst $TName{adtName}<$TypeNames{ts}>));
+        *$name{resultName} = inst $Name{constructorName}<$TypeNames{ts}>($Exprs{args});
+        $name{resultName};})
     };
   forwards to mkErrorCheck(localErrors, fwrd);
 }
