@@ -32,8 +32,11 @@ top::Decl ::= id::Name  allocator::Name
   local d::ADTDecl = new(adtLookup);
   d.env = adtLookup.env;
   d.returnType = adtLookup.returnType;
-  d.typeParameters = adtLookup.typeParameters;
   d.adtGivenName = adtLookup.adtGivenName;
+  d.typeParameters =
+    case lookupTemplate(id.name, top.env) of
+    | adtTemplateItem(params, adt) :: _ -> params
+    end;
   d.allocatorName = allocator;
   
   forwards to
