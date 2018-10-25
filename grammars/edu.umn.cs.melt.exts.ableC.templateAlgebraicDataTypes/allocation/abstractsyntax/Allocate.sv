@@ -24,17 +24,16 @@ top::Decl ::= id::Name  allocator::Name
      then [err(allocator.location, s"Allocator must have type void *(unsigned long) (got ${showType(allocator.valueItem.typerep)})")]
      else []);
   
-  local d::ADTDecl =
+  local adtLookup::Decorated ADTDecl =
     case lookupTemplate(id.name, top.env) of
     | adtTemplateItem(params, adt) :: _ -> adt
     end;
-  d.env = top.env;
-  d.returnType = top.returnType;
-  d.typeParameters =
-    case lookupTemplate(id.name, top.env) of
-    | adtTemplateItem(params, adt) :: _ -> params
-    end;
-  d.adtGivenName = d.name;
+  -- Re-decorate the found ADT decl, also supplying the allocator name
+  local d::ADTDecl = new(adtLookup);
+  d.env = adtLookup.env;
+  d.returnType = adtLookup.returnType;
+  d.typeParameters = adtLookup.typeParameters;
+  d.adtGivenName = adtLookup.adtGivenName;
   d.allocatorName = allocator;
   
   forwards to
