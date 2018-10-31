@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.xh>
 
 template<v>
 datatype Expr {
@@ -26,7 +27,7 @@ int main() {
   inst Expr<int> *t0 = inst malloc_Mul<int>(inst malloc_Const<int>(2), inst malloc_Const<int>(4));
 
   int result0 = inst value<int>(t0);
-  printf("result0: %d\n", result0);
+  printf("value(%s): %d\n", show(t0).text, result0);
   if (result0 != 8) return 1;
   
   inst Expr<long> *t1 = inst malloc_Mul<long>(inst malloc_Const<long>(3000), 
@@ -34,7 +35,7 @@ int main() {
                                                                     inst malloc_Const<long>(4000)));
 
   long result1 = inst value<long>(t1);
-  printf("result1: %ld\n", result1);
+  printf("value(%s): %ld\n", show(t1).text, result1);
   if (result1 != 24000000000) return 2;
 
   inst Expr<float> *t2 = inst malloc_Add<float>(inst malloc_Mul<float>(inst malloc_Const<float>(3),
@@ -43,7 +44,7 @@ int main() {
                                                                        inst malloc_Const<float>(3)));
 
   float result2 = inst value<float>(t2);
-  printf("result2: %f\n", result2);
+  printf("value(%s): %f\n", show(t2).text, result2);
   if (result2 != 6.75) return 3;
 
   return 0;

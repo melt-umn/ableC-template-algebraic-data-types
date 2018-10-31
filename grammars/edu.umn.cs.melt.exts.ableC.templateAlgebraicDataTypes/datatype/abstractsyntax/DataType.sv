@@ -16,6 +16,7 @@ top::Decl ::= params::Names adt::ADTDecl
     then [err(adt.location, "Template declarations must be global")]
     else adt.templateADTRedeclarationCheck ++ params.typeParameterErrors;
   
+  adt.givenRefId = nothing(); -- TODO: This shouldn't be needed
   forwards to
     decls(
       foldDecl([
@@ -26,12 +27,13 @@ top::Decl ::= params::Names adt::ADTDecl
 }
 
 abstract production templateDatatypeInstDecl
-top::Decl ::= declTypeName::String adt::ADTDecl
+top::Decl ::= adtName::String adtDeclName::String adt::ADTDecl
 {
   top.pp = ppConcat([ text("inst_datatype"), space(), adt.pp ]);
   propagate substituted; -- TODO: Interfering, see https://github.com/melt-umn/ableC/issues/121
   
-  adt.adtGivenName = declTypeName;
+  adt.givenRefId = just(s"edu:umn:cs:melt:exts:ableC:templateAlgebraicDataTypes:${adtName}");
+  adt.adtGivenName = adtDeclName;
   forwards to decls(adt.instDeclTransform);
 }
 
@@ -43,7 +45,7 @@ synthesized attribute templateTransform :: Decl occurs on ADTDecl;
 synthesized attribute instDecl :: (Decl ::= Name) occurs on ADTDecl;
 synthesized attribute instDeclTransform :: Decls occurs on ADTDecl;
 
-flowtype ADTDecl = templateADTRedeclarationCheck {decorate}, templateTransform {decorate, typeParameters, adtGivenName}, instDecl {decorate}, instDeclTransform {decorate, adtGivenName};
+flowtype ADTDecl = templateADTRedeclarationCheck {env, returnType}, instDecl {}, instDeclTransform {decorate, adtGivenName}; -- templateTransform {env, returnType, typeParameters, adtGivenName}, 
 
 aspect production adtDecl
 top::ADTDecl ::= n::Name cs::ConstructorList
@@ -52,14 +54,17 @@ top::ADTDecl ::= n::Name cs::ConstructorList
   top.templateTransform = decls(consDecl(adtEnumDecl, cs.templateFunDecls));
   top.instDecl =
     \ mangledName::Name ->
-      templateDatatypeInstDecl(n.name, adtDecl(mangledName, cs, location=top.location));
+      templateDatatypeInstDecl(
+        mangledName.name, n.name,
+        adtDecl(mangledName, cs, location=top.location));
   
   -- Evaluated on substituted version of the tree
   top.instDeclTransform =
     ableC_Decls {
-      $Decl{defsDecl([adtRefIdDef(top.refId, adtRefIdItem(top))])}
-      typedef $BaseTypeExpr{extTypeExpr(nilQualifier(), adtExtType(top.adtGivenName, n.name, top.refId))} $Name{n};
+      $Decl{defsDecl(preDefs)}
+      typedef $BaseTypeExpr{adtTypeExpr} $Name{n};
       $Decl{adtStructDecl}
+      $Decl{defsDecl(postDefs)}
       $Decls{adtProtos}
       $Decls{adtDecls}
     };
@@ -67,6 +72,7 @@ top::ADTDecl ::= n::Name cs::ConstructorList
 
 -- Constructs the initialization function for each constructor
 synthesized attribute templateFunDecls :: Decls occurs on ConstructorList;
+flowtype ConstructorList = templateFunDecls {env, returnType, typeParameters, adtGivenName, adtDeclName};
 
 aspect production consConstructor
 top::ConstructorList ::= c::Constructor cl::ConstructorList
@@ -82,6 +88,7 @@ top::ConstructorList ::=
 
 -- Constructs the function declaration to create each constructor
 synthesized attribute templateFunDecl :: Decl occurs on Constructor;
+flowtype Constructor = templateFunDecl {env, returnType, typeParameters, adtGivenName};
 
 aspect production constructor
 top::Constructor ::= n::Name ps::Parameters
