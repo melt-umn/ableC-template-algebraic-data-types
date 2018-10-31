@@ -11,13 +11,18 @@ top::Decl ::= params::Names adt::ADTDecl
   adt.typeParameters = params;
   adt.adtGivenName = adt.name;
   
+  local localErrors::[Message] =
+    if !top.isTopLevel
+    then [err(adt.location, "Template declarations must be global")]
+    else adt.templateADTRedeclarationCheck ++ params.typeParameterErrors;
+  
   forwards to
     decls(
       foldDecl([
         defsDecl([templateDef(adt.name, adtTemplateItem(params, adt))]),
-        if null(params.typeParameterErrors)
+        if null(localErrors)
         then adt.templateTransform
-        else warnDecl(params.typeParameterErrors)]));
+        else warnDecl(localErrors)]));
 }
 
 abstract production templateDatatypeInstDecl
@@ -33,15 +38,17 @@ top::Decl ::= declTypeName::String adt::ADTDecl
 autocopy attribute typeParameters :: Names occurs on ADTDecl, ConstructorList, Constructor;
 inherited attribute declTypeName :: String occurs on ADTDecl;
 
+synthesized attribute templateADTRedeclarationCheck::[Message] occurs on ADTDecl;
 synthesized attribute templateTransform :: Decl occurs on ADTDecl;
 synthesized attribute instDecl :: (Decl ::= Name) occurs on ADTDecl;
 synthesized attribute instDeclTransform :: Decls occurs on ADTDecl;
 
-flowtype ADTDecl = templateTransform {decorate, typeParameters, adtGivenName}, instDecl {decorate}, instDeclTransform {decorate, adtGivenName};
+flowtype ADTDecl = templateADTRedeclarationCheck {decorate}, templateTransform {decorate, typeParameters, adtGivenName}, instDecl {decorate}, instDeclTransform {decorate, adtGivenName};
 
 aspect production adtDecl
 top::ADTDecl ::= n::Name cs::ConstructorList
 {
+  top.templateADTRedeclarationCheck = n.templateRedeclarationCheck;
   top.templateTransform = decls(consDecl(adtEnumDecl, cs.templateFunDecls));
   top.instDecl =
     \ mangledName::Name ->
@@ -53,6 +60,8 @@ top::ADTDecl ::= n::Name cs::ConstructorList
       $Decl{defsDecl([adtRefIdDef(top.refId, adtRefIdItem(top))])}
       typedef $BaseTypeExpr{extTypeExpr(nilQualifier(), adtExtType(top.adtGivenName, n.name, top.refId))} $Name{n};
       $Decl{adtStructDecl}
+      $Decls{adtProtos}
+      $Decls{adtDecls}
     };
 }
 
