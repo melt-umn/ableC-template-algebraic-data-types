@@ -10,13 +10,15 @@ top::Decl ::= params::Names adt::ADTDecl
   
   adt.typeParameters = params;
   adt.adtGivenName = adt.name;
+  -- Not really used, only needed (possibly) to compute an environment for
+  -- ParameterDecl to use to forward
+  adt.givenRefId = nothing();
   
   local localErrors::[Message] =
     if !top.isTopLevel
     then [err(adt.location, "Template declarations must be global")]
     else adt.templateADTRedeclarationCheck ++ params.typeParameterErrors;
   
-  adt.givenRefId = nothing(); -- TODO: This shouldn't be needed
   forwards to
     decls(
       foldDecl([
@@ -32,8 +34,24 @@ top::Decl ::= adtName::String adtDeclName::String adt::ADTDecl
   top.pp = ppConcat([ text("inst_datatype"), space(), adt.pp ]);
   propagate substituted; -- TODO: Interfering, see https://github.com/melt-umn/ableC/issues/121
   
-  adt.givenRefId = just(s"edu:umn:cs:melt:exts:ableC:templateAlgebraicDataTypes:${adtName}");
+  local refId::String = s"edu:umn:cs:melt:exts:ableC:templateAlgebraicDataTypes:${adtName}";
+  -- adt may potentially contain type expressions referencing the adt currently being defined.
+  -- The translation will contain an appropriate typedef before the struct declaration, but here
+  -- we must explicitly place the type definition in the environment to avoid attempting to
+  -- re-instantiate the ADT template and cause infinite recursion.
+  local typeDecl::Decl =
+    ableC_Decl {
+      typedef $BaseTypeExpr{
+        extTypeExpr(nilQualifier(), adtExtType(adtName, adtDeclName, refId))}
+        $name{adtName};
+    };
+  typeDecl.env = top.env;
+  typeDecl.returnType = top.returnType;
+  typeDecl.isTopLevel = top.isTopLevel;
+  
+  adt.givenRefId = just(refId);
   adt.adtGivenName = adtDeclName;
+  adt.env = addEnv(typeDecl.defs, top.env);
   forwards to decls(adt.instDeclTransform);
 }
 
@@ -45,7 +63,7 @@ synthesized attribute templateTransform :: Decl occurs on ADTDecl;
 synthesized attribute instDecl :: (Decl ::= Name) occurs on ADTDecl;
 synthesized attribute instDeclTransform :: Decls occurs on ADTDecl;
 
-flowtype ADTDecl = templateADTRedeclarationCheck {env, returnType}, instDecl {}, instDeclTransform {decorate, adtGivenName}; -- templateTransform {env, returnType, typeParameters, adtGivenName}, 
+flowtype ADTDecl = templateADTRedeclarationCheck {env, returnType}, templateTransform {env, returnType, typeParameters, givenRefId, adtGivenName}, instDecl {}, instDeclTransform {decorate, adtGivenName};
 
 aspect production adtDecl
 top::ADTDecl ::= n::Name cs::ConstructorList
@@ -72,7 +90,7 @@ top::ADTDecl ::= n::Name cs::ConstructorList
 
 -- Constructs the initialization function for each constructor
 synthesized attribute templateFunDecls :: Decls occurs on ConstructorList;
-flowtype ConstructorList = templateFunDecls {env, returnType, typeParameters, adtGivenName, adtDeclName};
+flowtype ConstructorList = templateFunDecls {decorate, typeParameters, adtGivenName, adtDeclName};
 
 aspect production consConstructor
 top::ConstructorList ::= c::Constructor cl::ConstructorList
@@ -88,7 +106,7 @@ top::ConstructorList ::=
 
 -- Constructs the function declaration to create each constructor
 synthesized attribute templateFunDecl :: Decl occurs on Constructor;
-flowtype Constructor = templateFunDecl {env, returnType, typeParameters, adtGivenName};
+flowtype Constructor = templateFunDecl {decorate, typeParameters, adtGivenName};
 
 aspect production constructor
 top::Constructor ::= n::Name ps::Parameters
