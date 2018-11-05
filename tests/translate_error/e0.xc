@@ -32,6 +32,8 @@ v value(inst Expr<v, int> *e) {
 }
 
 int main() {
+  inst malloc_Add<int>;
+  
   inst Expr<int> *t0 = inst malloc_Mul<int>(inst malloc_Const<int>(2), inst malloc_Const<int>(4));
 
   int result0 = inst value<int>(t0);

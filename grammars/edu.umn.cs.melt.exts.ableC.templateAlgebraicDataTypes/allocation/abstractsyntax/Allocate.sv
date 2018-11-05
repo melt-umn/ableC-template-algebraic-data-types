@@ -108,7 +108,7 @@ top::ValueItem ::= adtName::Name allocatorName::Name constructorName::Name ts::T
   top.sourceLocation = allocatorName.location;
   top.directRefHandler =
     \ n::Name l::Location ->
-      errorExpr([err(l, s"Allocate constructor ${n.name} cannot be referenced, only called directly")], location=builtin);
+      errorExpr([err(l, s"Allocate constructor ${allocatorName.name}_${adtName.name}<${show(80, ppImplode(pp", ", ts.pps))}> cannot be referenced, only called directly")], location=builtin);
   top.directCallHandler =
     templateAllocateConstructorInstCallExpr(adtName, allocatorName, constructorName, ts, paramTypes, _, _, location=_);
 }
