@@ -81,10 +81,21 @@ top::ADTDecl ::= n::Name cs::ConstructorList
     ableC_Decls {
       $Decl{defsDecl(preDefs)}
       typedef $BaseTypeExpr{adtTypeExpr} $Name{n};
-      $Decl{adtStructDecl}
-      $Decl{defsDecl(postDefs)}
-      $Decls{adtProtos}
-      $Decls{adtDecls}
+      $Decl{
+        foldr(
+          deferredDecl,
+          decls(
+            ableC_Decls {
+              $Decl{adtStructDecl}
+              $Decl{defsDecl(postDefs)}
+              $Decls{adtProtos}
+              $Decls{adtDecls}
+            }),
+          catMaybes(
+            map(
+              (.maybeRefId),
+              concat(map((.typereps), map(snd, top.constructors))))))
+      }
     };
 }
 
