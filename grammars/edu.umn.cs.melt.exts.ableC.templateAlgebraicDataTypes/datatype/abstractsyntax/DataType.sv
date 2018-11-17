@@ -84,6 +84,7 @@ top::ADTDecl ::= n::Name cs::ConstructorList
       $Decl{
         foldr(
           deferredDecl,
+          -- Only declare the adt struct, etc. if the datatype doesn't already have a definition
           maybeDecl(
             \ env::Decorated Env -> null(lookupRefId(top.refId, env)),
             decls(
