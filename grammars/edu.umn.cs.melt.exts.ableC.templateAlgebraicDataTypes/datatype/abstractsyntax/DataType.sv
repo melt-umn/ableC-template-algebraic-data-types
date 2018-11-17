@@ -84,13 +84,15 @@ top::ADTDecl ::= n::Name cs::ConstructorList
       $Decl{
         foldr(
           deferredDecl,
-          decls(
-            ableC_Decls {
-              $Decl{adtStructDecl}
-              $Decl{defsDecl(postDefs)}
-              $Decls{adtProtos}
-              $Decls{adtDecls}
-            }),
+          maybeDecl(
+            \ env::Decorated Env -> null(lookupRefId(top.refId, env)),
+            decls(
+              ableC_Decls {
+                $Decl{adtStructDecl}
+                $Decl{defsDecl(postDefs)}
+                $Decls{adtProtos}
+                $Decls{adtDecls}
+              })),
           catMaybes(
             map(
               (.maybeRefId),
