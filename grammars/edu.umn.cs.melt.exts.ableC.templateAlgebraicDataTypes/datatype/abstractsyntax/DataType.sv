@@ -92,7 +92,6 @@ top::ADTDecl ::= n::Name cs::ConstructorList
                 $Decl{adtStructDecl}
                 $Decl{defsDecl(postDefs)}
                 $Decls{adtProtos}
-                $Decls{cs.implFunDecls}
                 $Decls{adtDecls}
               })),
           catMaybes(
