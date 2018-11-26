@@ -34,7 +34,7 @@ top::Decl ::= adtName::String adtDeclName::String adt::ADTDecl
   top.pp = ppConcat([ text("inst_datatype"), space(), adt.pp ]);
   propagate substituted; -- TODO: Interfering, see https://github.com/melt-umn/ableC/issues/121
   
-  local refId::String = s"edu:umn:cs:melt:exts:ableC:templateAlgebraicDataTypes:${adtDeclName}";
+  local refId::String = s"edu:umn:cs:melt:exts:ableC:templating:${adtDeclName}";
   -- adt may potentially contain type expressions referencing the adt currently being defined.
   -- The translation will contain an appropriate typedef before the struct declaration, but here
   -- we must explicitly place the type definition in the environment to avoid attempting to
@@ -48,10 +48,12 @@ top::Decl ::= adtName::String adtDeclName::String adt::ADTDecl
   typeDecl.env = top.env;
   typeDecl.returnType = top.returnType;
   typeDecl.isTopLevel = top.isTopLevel;
+  local typeDeclDefs::[Def] =
+    [valueDef(adtDeclName, head(foldr(consDefs, nilDefs(), typeDecl.defs).valueContribs).snd)];
   
   adt.givenRefId = just(refId);
   adt.adtGivenName = adtName;
-  adt.env = addEnv(typeDecl.defs, top.env);
+  adt.env = addEnv(typeDeclDefs, top.env);
   forwards to decls(adt.instDeclTransform);
 }
 
