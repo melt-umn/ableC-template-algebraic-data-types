@@ -34,7 +34,7 @@ top::Decl ::= adtName::String adtDeclName::String adt::ADTDecl
   top.pp = ppConcat([ text("inst_datatype"), space(), adt.pp ]);
   propagate substituted; -- TODO: Interfering, see https://github.com/melt-umn/ableC/issues/121
   
-  local refId::String = s"edu:umn:cs:melt:exts:ableC:templateAlgebraicDataTypes:${adtName}";
+  local refId::String = s"edu:umn:cs:melt:exts:ableC:templating:${adtDeclName}";
   -- adt may potentially contain type expressions referencing the adt currently being defined.
   -- The translation will contain an appropriate typedef before the struct declaration, but here
   -- we must explicitly place the type definition in the environment to avoid attempting to
@@ -43,15 +43,17 @@ top::Decl ::= adtName::String adtDeclName::String adt::ADTDecl
     ableC_Decl {
       typedef $BaseTypeExpr{
         extTypeExpr(nilQualifier(), adtExtType(adtName, adtDeclName, refId))}
-        $name{adtName};
+        $name{adtDeclName};
     };
   typeDecl.env = top.env;
   typeDecl.returnType = top.returnType;
   typeDecl.isTopLevel = top.isTopLevel;
+  local typeDeclDefs::[Def] =
+    [valueDef(adtDeclName, head(foldr(consDefs, nilDefs(), typeDecl.defs).valueContribs).snd)];
   
   adt.givenRefId = just(refId);
-  adt.adtGivenName = adtDeclName;
-  adt.env = addEnv(typeDecl.defs, top.env);
+  adt.adtGivenName = adtName;
+  adt.env = addEnv(typeDeclDefs, top.env);
   forwards to decls(adt.instDeclTransform);
 }
 
@@ -73,7 +75,7 @@ top::ADTDecl ::= n::Name cs::ConstructorList
   top.instDecl =
     \ mangledName::Name ->
       templateDatatypeInstDecl(
-        mangledName.name, n.name,
+        n.name, mangledName.name,
         adtDecl(mangledName, cs, location=top.location));
   
   -- Evaluated on substituted version of the tree
@@ -81,10 +83,24 @@ top::ADTDecl ::= n::Name cs::ConstructorList
     ableC_Decls {
       $Decl{defsDecl(preDefs)}
       typedef $BaseTypeExpr{adtTypeExpr} $Name{n};
-      $Decl{adtStructDecl}
-      $Decl{defsDecl(postDefs)}
-      $Decls{adtProtos}
-      $Decls{adtDecls}
+      $Decl{
+        foldr(
+          deferredDecl,
+          -- Only declare the adt struct, etc. if the datatype doesn't already have a definition
+          maybeDecl(
+            \ env::Decorated Env -> null(lookupRefId(top.refId, env)),
+            decls(
+              ableC_Decls {
+                $Decl{adtStructDecl}
+                $Decl{defsDecl(postDefs)}
+                $Decls{adtProtos}
+                $Decls{adtDecls}
+              })),
+          catMaybes(
+            map(
+              (.maybeRefId),
+              concat(map((.typereps), map(snd, top.constructors))))))
+      }
     };
 }
 
