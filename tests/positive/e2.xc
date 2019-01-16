@@ -4,7 +4,7 @@ datatype Foo {
 };
 
 struct Bar {
-  inst Foo<struct Bar> *f;
+  Foo<struct Bar> *f;
 };
 
 int main() {
