@@ -8,5 +8,4 @@ top::TemplateItem ::= params::Decorated Names adt::Decorated ADTDecl
   top.sourceLocation = adt.location;
   top.isItemValue = false;
   top.isItemType = true;
-  top.isItemForwardDecl = false;
 }

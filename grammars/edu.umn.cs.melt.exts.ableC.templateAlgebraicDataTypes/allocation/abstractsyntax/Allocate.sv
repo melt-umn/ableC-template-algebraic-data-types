@@ -77,8 +77,8 @@ top::Constructor ::= n::Name ps::Parameters
   top.templateAllocatorDefs =
     [templateDef(
        allocateConstructorName,
-       templateItem(
-         false, false, n.location, top.typeParameters.names, -- TODO: location should be allocate decl location
+       valueTemplateItem(
+         n.location, top.typeParameters.names, -- TODO: location should be allocate decl location
          templateAllocateConstructorInstDecl(
            name(top.adtGivenName, location=builtin),
            top.allocatorName, n, _, top.typeParameters.asTypeNames, ps)))];
