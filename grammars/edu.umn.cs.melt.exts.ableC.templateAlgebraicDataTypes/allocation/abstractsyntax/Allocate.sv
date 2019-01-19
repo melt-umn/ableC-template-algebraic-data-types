@@ -77,12 +77,22 @@ top::Constructor ::= n::Name ps::Parameters
   top.templateAllocatorDefs =
     [templateDef(
        allocateConstructorName,
-       valueTemplateItem(
-         n.location, top.typeParameters.names, -- TODO: location should be allocate decl location
+       constructorTemplateItem(
+         n.location, top.typeParameters.names, ps, -- TODO: location should be allocate decl location
          templateAllocateConstructorInstDecl(
            name(top.adtGivenName, location=builtin),
            top.allocatorName, n, _, top.typeParameters.asTypeNames, ps)))];
   top.templateAllocatorErrorDefs = [templateDef(allocateConstructorName, errorTemplateItem())];
+}
+
+abstract production constructorTemplateItem
+top::TemplateItem ::= sourceLocation::Location params::[String] constructorParams::Parameters decl::(Decl ::= Name)
+{
+  top.templateParams = params;
+  top.decl = decl;
+  top.maybeParameters = just(constructorParams);
+  top.sourceLocation = sourceLocation;
+  top.isItemValue = true;
 }
 
 abstract production templateAllocateConstructorInstDecl
