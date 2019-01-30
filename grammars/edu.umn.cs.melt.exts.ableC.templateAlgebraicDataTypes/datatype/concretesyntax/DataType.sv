@@ -57,7 +57,7 @@ top::TemplateInitialDatatypeDeclaration_c ::=
 {
   top.ast =
     \ cs::ConstructorList ->
-      templateDatatypeDecl(params.ast, adtDecl(id.ast, cs, location=top.location));
+      templateDatatypeDecl(params.ast, adtDecl(nilAttribute(), id.ast, cs, location=top.location));
   top.declaredIdent = id.ast;
 }
 action {
