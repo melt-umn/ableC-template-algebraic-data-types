@@ -68,7 +68,7 @@ synthesized attribute instDeclTransform :: Decls occurs on ADTDecl;
 flowtype ADTDecl = templateADTRedeclarationCheck {env, returnType}, templateTransform {env, returnType, typeParameters, givenRefId, adtGivenName}, instDecl {}, instDeclTransform {decorate, adtGivenName};
 
 aspect production adtDecl
-top::ADTDecl ::= n::Name cs::ConstructorList
+top::ADTDecl ::= attrs::Attributes n::Name cs::ConstructorList
 {
   top.templateADTRedeclarationCheck = n.templateRedeclarationCheck;
   top.templateTransform = decls(consDecl(adtEnumDecl, cs.templateFunDecls));
@@ -76,7 +76,8 @@ top::ADTDecl ::= n::Name cs::ConstructorList
     \ mangledName::Name ->
       templateDatatypeInstDecl(
         n.name, mangledName.name,
-        adtDecl(mangledName, cs, location=top.location));
+        -- Discard attributes, since we don't allow specifying refIds on templated types anyway
+        adtDecl(nilAttribute(), mangledName, cs, location=top.location));
   
   -- Evaluated on substituted version of the tree
   top.instDeclTransform =

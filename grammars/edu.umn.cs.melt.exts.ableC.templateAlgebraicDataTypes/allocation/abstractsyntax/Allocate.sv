@@ -51,7 +51,7 @@ synthesized attribute templateAllocatorDefs::[Def] occurs on ADTDecl, Constructo
 synthesized attribute templateAllocatorErrorDefs::[Def] occurs on ADTDecl, ConstructorList, Constructor;
 
 aspect production adtDecl
-top::ADTDecl ::= n::Name cs::ConstructorList
+top::ADTDecl ::= attrs::Attributes n::Name cs::ConstructorList
 {
   top.templateAllocatorDefs = cs.templateAllocatorDefs;
   top.templateAllocatorErrorDefs = cs.templateAllocatorErrorDefs;
