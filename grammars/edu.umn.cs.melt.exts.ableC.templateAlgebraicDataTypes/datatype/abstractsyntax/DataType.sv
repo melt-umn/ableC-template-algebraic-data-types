@@ -1,14 +1,14 @@
 grammar edu:umn:cs:melt:exts:ableC:templateAlgebraicDataTypes:datatype:abstractsyntax;
 
 abstract production templateDatatypeDecl
-top::Decl ::= params::Names adt::ADTDecl
+top::Decl ::= params::TemplateParameters adt::ADTDecl
 {
   propagate substituted;
   top.pp = ppConcat([
     pp"template<", ppImplode(text(", "), params.pps), pp">", line(),
     text("datatype"), space(), adt.pp]);
   
-  adt.typeParameters = params;
+  adt.templateParameters = params;
   adt.adtGivenName = adt.name;
   -- Not really used, only needed (possibly) to compute an environment for
   -- ParameterDecl to use to forward
@@ -17,7 +17,7 @@ top::Decl ::= params::Names adt::ADTDecl
   local localErrors::[Message] =
     if !top.isTopLevel
     then [err(adt.location, "Template declarations must be global")]
-    else adt.templateADTRedeclarationCheck ++ params.typeParameterErrors;
+    else adt.templateADTRedeclarationCheck ++ params.errors;
   
   forwards to
     decls(
@@ -57,7 +57,7 @@ top::Decl ::= adtName::String adtDeclName::String adt::ADTDecl
   forwards to decls(adt.instDeclTransform);
 }
 
-autocopy attribute typeParameters :: Names occurs on ADTDecl, ConstructorList, Constructor;
+autocopy attribute templateParameters :: TemplateParameters occurs on ADTDecl, ConstructorList, Constructor;
 inherited attribute declTypeName :: String occurs on ADTDecl;
 
 synthesized attribute templateADTRedeclarationCheck::[Message] occurs on ADTDecl;
@@ -65,7 +65,7 @@ synthesized attribute templateTransform :: Decl occurs on ADTDecl;
 synthesized attribute instDecl :: (Decl ::= Name) occurs on ADTDecl;
 synthesized attribute instDeclTransform :: Decls occurs on ADTDecl;
 
-flowtype ADTDecl = templateADTRedeclarationCheck {env, returnType}, templateTransform {env, returnType, typeParameters, givenRefId, adtGivenName}, instDecl {}, instDeclTransform {decorate, adtGivenName};
+flowtype ADTDecl = templateADTRedeclarationCheck {env, returnType}, templateTransform {env, returnType, templateParameters, givenRefId, adtGivenName}, instDecl {}, instDeclTransform {decorate, adtGivenName};
 
 aspect production adtDecl
 top::ADTDecl ::= attrs::Attributes n::Name cs::ConstructorList
@@ -107,7 +107,7 @@ top::ADTDecl ::= attrs::Attributes n::Name cs::ConstructorList
 
 -- Constructs the initialization function for each constructor
 synthesized attribute templateFunDecls :: Decls occurs on ConstructorList;
-flowtype ConstructorList = templateFunDecls {decorate, typeParameters, adtGivenName, adtDeclName};
+flowtype ConstructorList = templateFunDecls {decorate, templateParameters, adtGivenName, adtDeclName};
 
 aspect production consConstructor
 top::ConstructorList ::= c::Constructor cl::ConstructorList
@@ -123,17 +123,17 @@ top::ConstructorList ::=
 
 -- Constructs the function declaration to create each constructor
 synthesized attribute templateFunDecl :: Decl occurs on Constructor;
-flowtype Constructor = templateFunDecl {decorate, typeParameters, adtGivenName};
+flowtype Constructor = templateFunDecl {decorate, templateParameters, adtGivenName};
 
 aspect production constructor
 top::Constructor ::= n::Name ps::Parameters
 {
   top.templateFunDecl =
     ableC_Decl {
-      template<$Names{top.typeParameters}>
-      inst $tname{top.adtGivenName}<$TypeNames{top.typeParameters.asTypeNames}>
+      template<$TemplateParameters{top.templateParameters}>
+      inst $tname{top.adtGivenName}<$TemplateArgNames{top.templateParameters.asTemplateArgNames}>
         $Name{n}($Parameters{ps}) {
-        inst $tname{top.adtGivenName}<$TypeNames{top.typeParameters.asTypeNames}>
+        inst $tname{top.adtGivenName}<$TemplateArgNames{top.templateParameters.asTemplateArgNames}>
           result;
         result.tag = $name{top.adtGivenName ++ "_" ++ n.name};
         $Stmt{ps.asAssignments}
@@ -143,17 +143,34 @@ top::Constructor ::= n::Name ps::Parameters
     };
 }
 
-synthesized attribute asTypeNames::TypeNames occurs on Names;
+synthesized attribute asTemplateArgNames::TemplateArgNames occurs on TemplateParameters;
 
-aspect production consName
-top::Names ::= h::Name t::Names
+aspect production consTemplateParameter
+top::TemplateParameters ::= h::TemplateParameter t::TemplateParameters
 {
-  top.asTypeNames =
-    consTypeName(typeName(typedefTypeExpr(nilQualifier(), h), baseTypeExpr()), t.asTypeNames);
+  top.asTemplateArgNames = consTemplateArgName(h.asTemplateArgName, t.asTemplateArgNames);
 }
 
-aspect production nilName
-top::Names ::=
+aspect production nilTemplateParameter
+top::TemplateParameters ::=
 {
-  top.asTypeNames = nilTypeName();
+  top.asTemplateArgNames = nilTemplateArgName();
+}
+
+synthesized attribute asTemplateArgName::TemplateArgName occurs on TemplateParameter;
+
+aspect production typeTemplateParameter
+top::TemplateParameter ::= n::Name
+{
+  top.asTemplateArgName =
+    typeTemplateArgName(
+      typeName(typedefTypeExpr(nilQualifier(), n), baseTypeExpr()),
+      location=builtin);
+}
+
+aspect production valueTemplateParameter
+top::TemplateParameter ::= bty::BaseTypeExpr n::Name mty::TypeModifierExpr
+{
+  top.asTemplateArgName =
+    valueTemplateArgName(declRefExpr(n, location=builtin), location=builtin);
 }
