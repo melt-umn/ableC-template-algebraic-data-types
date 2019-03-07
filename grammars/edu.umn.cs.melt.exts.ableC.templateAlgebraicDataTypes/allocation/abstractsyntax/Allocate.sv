@@ -78,7 +78,8 @@ top::Constructor ::= n::Name ps::Parameters
     [templateDef(
        allocateConstructorName,
        constructorTemplateItem(
-         n.location, top.templateParameters.names, ps, -- TODO: location should be allocate decl location
+         n.location, -- TODO: location should be allocate decl location
+         top.templateParameters.names, top.templateParameters.kinds, ps,
          templateAllocateConstructorInstDecl(
            name(top.adtGivenName, location=builtin),
            top.allocatorName, n, _, top.templateParameters.asTemplateArgNames, ps)))];
@@ -86,9 +87,10 @@ top::Constructor ::= n::Name ps::Parameters
 }
 
 abstract production constructorTemplateItem
-top::TemplateItem ::= sourceLocation::Location params::[String] constructorParams::Parameters decl::(Decl ::= Name)
+top::TemplateItem ::= sourceLocation::Location params::[String] kinds::[Maybe<TypeName>] constructorParams::Parameters decl::(Decl ::= Name)
 {
   top.templateParams = params;
+  top.kinds = kinds;
   top.decl = decl;
   top.maybeParameters = just(constructorParams);
   top.sourceLocation = sourceLocation;

@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <string.xh>
 
-template<v>
+template<typename v>
 datatype Expr {
   Add (Expr<v> *e1, Expr<v> *e2);
   Mul (Expr<v> *e1, Expr<v> *e2);
@@ -11,7 +11,7 @@ datatype Expr {
 
 template allocate datatype Expr with malloc;
 
-template<v>
+template<typename v>
 v value(Expr<v> *e) {
   v result = 99;
   
