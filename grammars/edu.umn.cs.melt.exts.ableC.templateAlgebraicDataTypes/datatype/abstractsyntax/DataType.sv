@@ -6,7 +6,7 @@ top::Decl ::= params::TemplateParameters adt::ADTDecl
   propagate substituted;
   top.pp = ppConcat([
     pp"template<", ppImplode(text(", "), params.pps), pp">", line(),
-    text("datatype"), space(), adt.pp]);
+    text("datatype"), space(), adt.pp, semi()]);
   
   adt.templateParameters = params;
   adt.adtGivenName = adt.name;
@@ -165,12 +165,12 @@ top::TemplateParameter ::= n::Name
   top.asTemplateArgName =
     typeTemplateArgName(
       typeName(typedefTypeExpr(nilQualifier(), n), baseTypeExpr()),
-      location=builtin);
+      location=n.location);
 }
 
 aspect production valueTemplateParameter
 top::TemplateParameter ::= bty::BaseTypeExpr n::Name mty::TypeModifierExpr
 {
   top.asTemplateArgName =
-    valueTemplateArgName(declRefExpr(n, location=builtin), location=builtin);
+    valueTemplateArgName(declRefExpr(n, location=n.location), location=n.location);
 }

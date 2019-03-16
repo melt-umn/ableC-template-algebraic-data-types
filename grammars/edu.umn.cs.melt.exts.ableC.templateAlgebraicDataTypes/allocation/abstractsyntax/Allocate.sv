@@ -4,7 +4,7 @@ abstract production templateAllocateDecl
 top::Decl ::= id::Name  allocator::Name
 {
   propagate substituted;
-  top.pp = pp"template allocate datatype ${id.pp} with ${allocator.pp});";
+  top.pp = pp"template allocate datatype ${id.pp} with ${allocator.pp};";
   
   local expectedAllocatorType::Type =
     functionType(
