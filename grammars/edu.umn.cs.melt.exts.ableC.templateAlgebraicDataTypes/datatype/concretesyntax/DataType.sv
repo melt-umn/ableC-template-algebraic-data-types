@@ -17,7 +17,7 @@ imports edu:umn:cs:melt:exts:ableC:algebraicDataTypes:datatype:abstractsyntax;
 -- TODO: This also exports regular datatype declarations, maybe we don't want to do that?
 exports edu:umn:cs:melt:exts:ableC:algebraicDataTypes:datatype:concretesyntax;
 exports edu:umn:cs:melt:exts:ableC:templating:concretesyntax:templateKeyword;
-exports edu:umn:cs:melt:exts:ableC:templating:concretesyntax:typeParameters;
+exports edu:umn:cs:melt:exts:ableC:templating:concretesyntax:templateParameters;
 
 terminal TemplateDatatype_t 'datatype';
 
@@ -53,7 +53,7 @@ nonterminal TemplateInitialDatatypeDeclaration_c with ast<(Decl ::= ConstructorL
 
 concrete production templateInitialDatatypeDeclaration_c
 top::TemplateInitialDatatypeDeclaration_c ::=
-  '<' params::TypeParameters_c '>' 'datatype' id::Identifier_c
+  '<' params::TemplateParameters_c '>' 'datatype' id::Identifier_c
 {
   top.ast =
     \ cs::ConstructorList ->

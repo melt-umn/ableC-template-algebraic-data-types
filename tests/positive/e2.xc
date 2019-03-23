@@ -1,4 +1,4 @@
-template<a>
+template<typename a>
 datatype Foo {
   A(a val);
 };

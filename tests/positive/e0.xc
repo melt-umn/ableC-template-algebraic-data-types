@@ -6,25 +6,25 @@
 #define M_PI (3.14159265358979323846)
 #endif
 
-template<distance, angle>
+template<typename distance, typename angle>
 datatype Point {
   Cart(distance x, distance y);
   Polar(distance r, angle t);
 };
 
-template<distance, angle>
+template<typename distance, typename angle>
 inline distance get_x(Point<distance, angle> p) {
   return match(p) (Cart(x, y) -> x;
                    Polar(r, t) -> r * cos(t););
 }
 
-template<distance, angle>
+template<typename distance, typename angle>
 inline distance get_y(Point<distance, angle> p) {
   return match(p) (Cart(x, y) -> y;
                    Polar(r, t) -> r * sin(t););
 }
 
-template<distance, angle>
+template<typename distance, typename angle>
 distance dist(Point<distance, angle> p1,
               Point<distance, angle> p2) {
   distance d_x = get_x(p1) - get_x(p2);

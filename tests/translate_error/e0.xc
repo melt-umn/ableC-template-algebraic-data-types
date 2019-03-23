@@ -1,14 +1,14 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-template<v>
+template<typename v>
 datatype Expr {
   Add (Expr<v> *e1, Expr<v> *e2);
   Mul (Expr<v> *e1, Expr<v> *e2);
   Const (v val);
 };
 
-template<v>
+template<typename v>
 datatype Expr {
   Add (Expr<v> *e1, Expr<v> *e2);
   Mul (Expr<v> *e1, Expr<v> *e2);
@@ -19,7 +19,7 @@ template allocate datatype Foo with malloc;
 
 template allocate datatype Expr with malloc;
 
-template<v>
+template<typename v>
 v value(Expr<v, int> *e) {
   v result = 99;
   
