@@ -3,7 +3,6 @@ grammar edu:umn:cs:melt:exts:ableC:templateAlgebraicDataTypes:allocation:abstrac
 abstract production templateAllocateDecl
 top::Decl ::= id::Name  allocator::Name
 {
-  propagate substituted;
   top.pp = pp"template allocate datatype ${id.pp} with ${allocator.pp};";
   
   local expectedAllocatorType::Type =
@@ -100,7 +99,6 @@ top::TemplateItem ::= sourceLocation::Location params::[String] kinds::[Maybe<Ty
 abstract production templateAllocateConstructorInstDecl
 top::Decl ::= adtName::Name allocatorName::Name constructorName::Name n::Name ts::TemplateArgNames ps::Parameters
 {
-  propagate substituted;
   top.pp = pp"templateAllocateConstructorInstDecl ${n.pp};";
   
   ps.position = 0;
@@ -128,7 +126,6 @@ top::ValueItem ::= adtName::Name allocatorName::Name constructorName::Name ts::T
 abstract production templateAllocateConstructorInstCallExpr
 top::Expr ::= adtName::Name allocatorName::Name constructorName::Name ts::TemplateArgNames paramTypes::[Type] n::Name args::Exprs
 {
-  propagate substituted;
   top.pp = parens(ppConcat([n.pp, parens(ppImplode(cat(comma(), space()), args.pps))]));
   local localErrors::[Message] = args.errors ++ args.argumentErrors;
   
