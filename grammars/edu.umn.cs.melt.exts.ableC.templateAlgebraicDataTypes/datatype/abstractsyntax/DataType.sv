@@ -3,7 +3,6 @@ grammar edu:umn:cs:melt:exts:ableC:templateAlgebraicDataTypes:datatype:abstracts
 abstract production templateDatatypeDecl
 top::Decl ::= params::TemplateParameters adt::ADTDecl
 {
-  propagate substituted;
   top.pp = ppConcat([
     pp"template<", ppImplode(text(", "), params.pps), pp">", line(),
     text("datatype"), space(), adt.pp, semi()]);
@@ -32,7 +31,6 @@ abstract production templateDatatypeInstDecl
 top::Decl ::= adtName::String adtDeclName::String adt::ADTDecl
 {
   top.pp = ppConcat([ text("inst_datatype"), space(), adt.pp ]);
-  propagate substituted; -- TODO: Interfering, see https://github.com/melt-umn/ableC/issues/121
   
   local refId::String = s"edu:umn:cs:melt:exts:ableC:templating:${adtDeclName}";
   -- adt may potentially contain type expressions referencing the adt currently being defined.
