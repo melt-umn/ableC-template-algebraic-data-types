@@ -16,6 +16,7 @@ parser extendedParser :: cst:Root {
   edu:umn:cs:melt:exts:ableC:templateAlgebraicDataTypes;
   edu:umn:cs:melt:exts:ableC:algebraicDataTypes;
   edu:umn:cs:melt:exts:ableC:templating;
+  edu:umn:cs:melt:exts:ableC:string;
 } 
 
 function main

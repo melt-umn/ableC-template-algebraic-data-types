@@ -3,8 +3,7 @@ grammar edu:umn:cs:melt:exts:ableC:templateAlgebraicDataTypes:allocation:abstrac
 abstract production templateAllocateDecl
 top::Decl ::= id::Name  allocator::Name
 {
-  propagate substituted;
-  top.pp = pp"template allocate datatype ${id.pp} with ${allocator.pp});";
+  top.pp = pp"template allocate datatype ${id.pp} with ${allocator.pp};";
   
   local expectedAllocatorType::Type =
     functionType(
@@ -24,17 +23,19 @@ top::Decl ::= id::Name  allocator::Name
      then [err(allocator.location, s"Allocator must have type void *(unsigned long) (got ${showType(allocator.valueItem.typerep)})")]
      else []);
   
-  local d::ADTDecl =
+  local adtLookup::Decorated ADTDecl =
     case lookupTemplate(id.name, top.env) of
     | adtTemplateItem(params, adt) :: _ -> adt
     end;
-  d.env = top.env;
-  d.returnType = top.returnType;
-  d.typeParameters =
+  -- Re-decorate the found ADT decl, also supplying the allocator name
+  local d::ADTDecl = new(adtLookup);
+  d.env = adtLookup.env;
+  d.returnType = adtLookup.returnType;
+  d.adtGivenName = adtLookup.adtGivenName;
+  d.templateParameters =
     case lookupTemplate(id.name, top.env) of
     | adtTemplateItem(params, adt) :: _ -> params
     end;
-  d.adtGivenName = d.name;
   d.allocatorName = allocator;
   
   forwards to
@@ -49,7 +50,7 @@ synthesized attribute templateAllocatorDefs::[Def] occurs on ADTDecl, Constructo
 synthesized attribute templateAllocatorErrorDefs::[Def] occurs on ADTDecl, ConstructorList, Constructor;
 
 aspect production adtDecl
-top::ADTDecl ::= n::Name cs::ConstructorList
+top::ADTDecl ::= attrs::Attributes n::Name cs::ConstructorList
 {
   top.templateAllocatorDefs = cs.templateAllocatorDefs;
   top.templateAllocatorErrorDefs = cs.templateAllocatorErrorDefs;
@@ -75,18 +76,29 @@ top::Constructor ::= n::Name ps::Parameters
   top.templateAllocatorDefs =
     [templateDef(
        allocateConstructorName,
-       templateItem(
-         false, false, n.location, top.typeParameters.names, -- TODO: location should be allocate decl location
+       constructorTemplateItem(
+         n.location, -- TODO: location should be allocate decl location
+         top.templateParameters.names, top.templateParameters.kinds, ps,
          templateAllocateConstructorInstDecl(
            name(top.adtGivenName, location=builtin),
-           top.allocatorName, n, _, top.typeParameters.asTypeNames, ps)))];
+           top.allocatorName, n, _, top.templateParameters.asTemplateArgNames, ps)))];
   top.templateAllocatorErrorDefs = [templateDef(allocateConstructorName, errorTemplateItem())];
 }
 
-abstract production templateAllocateConstructorInstDecl
-top::Decl ::= adtName::Name allocatorName::Name constructorName::Name n::Name ts::TypeNames ps::Parameters
+abstract production constructorTemplateItem
+top::TemplateItem ::= sourceLocation::Location params::[String] kinds::[Maybe<TypeName>] constructorParams::Parameters decl::(Decl ::= Name)
 {
-  propagate substituted;
+  top.templateParams = params;
+  top.kinds = kinds;
+  top.decl = decl;
+  top.maybeParameters = just(constructorParams);
+  top.sourceLocation = sourceLocation;
+  top.isItemValue = true;
+}
+
+abstract production templateAllocateConstructorInstDecl
+top::Decl ::= adtName::Name allocatorName::Name constructorName::Name n::Name ts::TemplateArgNames ps::Parameters
+{
   top.pp = pp"templateAllocateConstructorInstDecl ${n.pp};";
   
   ps.position = 0;
@@ -99,22 +111,21 @@ top::Decl ::= adtName::Name allocatorName::Name constructorName::Name n::Name ts
 }
 
 abstract production templateAllocateConstructorInstValueItem
-top::ValueItem ::= adtName::Name allocatorName::Name constructorName::Name ts::TypeNames paramTypes::[Type]
+top::ValueItem ::= adtName::Name allocatorName::Name constructorName::Name ts::TemplateArgNames paramTypes::[Type]
 {
   top.pp = pp"templateAllocateConstructorInstValueItem(${adtName.pp}, ${allocatorName.pp}, ${constructorName.pp})";
   top.typerep = errorType();
   top.sourceLocation = allocatorName.location;
   top.directRefHandler =
     \ n::Name l::Location ->
-      errorExpr([err(l, s"Allocate constructor ${n.name} cannot be referenced, only called directly")], location=builtin);
+      errorExpr([err(l, s"Allocate constructor ${allocatorName.name}_${adtName.name}<${show(80, ppImplode(pp", ", ts.pps))}> cannot be referenced, only called directly")], location=builtin);
   top.directCallHandler =
     templateAllocateConstructorInstCallExpr(adtName, allocatorName, constructorName, ts, paramTypes, _, _, location=_);
 }
 
 abstract production templateAllocateConstructorInstCallExpr
-top::Expr ::= adtName::Name allocatorName::Name constructorName::Name ts::TypeNames paramTypes::[Type] n::Name args::Exprs
+top::Expr ::= adtName::Name allocatorName::Name constructorName::Name ts::TemplateArgNames paramTypes::[Type] n::Name args::Exprs
 {
-  propagate substituted;
   top.pp = parens(ppConcat([n.pp, parens(ppImplode(cat(comma(), space()), args.pps))]));
   local localErrors::[Message] = args.errors ++ args.argumentErrors;
   
@@ -126,8 +137,8 @@ top::Expr ::= adtName::Name allocatorName::Name constructorName::Name ts::TypeNa
   local resultName::String = "result_" ++ toString(genInt());
   local fwrd::Expr =
     ableC_Expr {
-      ({inst $TName{adtName}<$TypeNames{ts}> *$name{resultName} = $Name{allocatorName}(sizeof(inst $TName{adtName}<$TypeNames{ts}>));
-        *$name{resultName} = inst $Name{constructorName}<$TypeNames{ts}>($Exprs{args});
+      ({inst $TName{adtName}<$TemplateArgNames{ts}> *$name{resultName} = $Name{allocatorName}(sizeof(inst $TName{adtName}<$TemplateArgNames{ts}>));
+        *$name{resultName} = inst $Name{constructorName}<$TemplateArgNames{ts}>($Exprs{args});
         $name{resultName};})
     };
   forwards to mkErrorCheck(localErrors, fwrd);
