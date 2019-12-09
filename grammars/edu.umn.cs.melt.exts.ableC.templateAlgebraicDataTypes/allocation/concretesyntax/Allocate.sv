@@ -11,7 +11,7 @@ imports edu:umn:cs:melt:exts:ableC:algebraicDataTypes:datatype;
 
 exports edu:umn:cs:melt:exts:ableC:templating:concretesyntax:templateKeyword;
 
-terminal Allocate_t 'allocate' lexer classes {Ckeyword};
+terminal Allocate_t 'allocate' lexer classes {Keyword, ScopedReserved}; -- TODO
 terminal Datatype_t 'datatype';
 terminal With_t 'with';
 
