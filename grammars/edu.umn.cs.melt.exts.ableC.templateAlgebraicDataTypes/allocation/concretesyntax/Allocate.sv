@@ -11,9 +11,10 @@ imports edu:umn:cs:melt:exts:ableC:algebraicDataTypes:datatype;
 
 exports edu:umn:cs:melt:exts:ableC:templating:concretesyntax:templateKeyword;
 
-terminal Allocate_t 'allocate' lexer classes {Keyword, ScopedReserved}; -- TODO
-terminal Datatype_t 'datatype';
-terminal With_t 'with';
+-- Non-marking version of datatype and allocate keywords
+terminal Allocate_t 'allocate' lexer classes {Keyword};
+terminal Datatype_t 'datatype' lexer classes {Keyword};
+terminal With_t 'with' lexer classes {Keyword};
 
 concrete production allocateDecl_c
 -- id is Identifer_t here to avoid follow spillage

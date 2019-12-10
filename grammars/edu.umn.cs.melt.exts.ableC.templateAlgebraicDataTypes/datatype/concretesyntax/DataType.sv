@@ -20,13 +20,19 @@ exports edu:umn:cs:melt:exts:ableC:templating:concretesyntax:templateKeyword;
 exports edu:umn:cs:melt:exts:ableC:templating:concretesyntax:templateParameters;
 
 -- Non-marking version of datatype keyword
-terminal TemplateDatatype_t 'datatype' lexer classes {Keyword, ScopedReserved};
+terminal TemplateDatatype_t 'datatype' lexer classes {Keyword, Global};
 
 -- Ambiguity with template functions containing a datatype as the return type 
 -- e.g. template<a> datatype Foo f() { ... }
-disambiguate Datatype_t, TemplateDatatype_t {
-  pluck TemplateDatatype_t;
-}
+-- Disambugation is done through the Scoped class, specify a preference using
+-- globalPreferences instead of a disambiguation function.
+--disambiguate Datatype_t, TemplateDatatype_t {
+--  pluck TemplateDatatype_t;
+--}
+aspect parser attribute globalPreferences
+  action {
+    globalPreferences = pair([TemplateDatatype_t, Datatype_t], TemplateDatatype_t) :: globalPreferences;
+  };
 
 concrete production templateADTDecl_c
 top::Declaration_c ::= 'template' d::TemplateInitialDatatypeDeclaration_c '{' cs::ConstructorList_c '}' ';'
