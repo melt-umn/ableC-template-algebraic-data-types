@@ -47,9 +47,10 @@ top::Decl ::= id::Name  allocator::Name
 }
 
 monoid attribute templateAllocatorDefs::[Def] with [], ++;
-attribute templateAllocatorDefs occurs on ADTDecl, ConstructorList, Constructor;
 monoid attribute templateAllocatorErrorDefs::[Def] with [], ++;
-attribute templateAllocatorErrorDefs occurs on ADTDecl, ConstructorList, Constructor;
+attribute templateAllocatorDefs, templateAllocatorErrorDefs occurs on ADTDecl, ConstructorList, Constructor;
+
+propagate templateAllocatorDefs, templateAllocatorErrorDefs on ADTDecl, ConstructorList;
 
 aspect production constructor
 top::Constructor ::= n::Name ps::Parameters
