@@ -46,34 +46,15 @@ top::Decl ::= id::Name  allocator::Name
     else defsDecl(d.templateAllocatorDefs);
 }
 
-synthesized attribute templateAllocatorDefs::[Def] occurs on ADTDecl, ConstructorList, Constructor;
-synthesized attribute templateAllocatorErrorDefs::[Def] occurs on ADTDecl, ConstructorList, Constructor;
-
-aspect production adtDecl
-top::ADTDecl ::= attrs::Attributes n::Name cs::ConstructorList
-{
-  top.templateAllocatorDefs = cs.templateAllocatorDefs;
-  top.templateAllocatorErrorDefs = cs.templateAllocatorErrorDefs;
-}
-
-aspect production consConstructor
-top::ConstructorList ::= c::Constructor cl::ConstructorList
-{
-  top.templateAllocatorDefs = c.templateAllocatorDefs ++ cl.templateAllocatorDefs;
-  top.templateAllocatorErrorDefs = c.templateAllocatorErrorDefs ++ cl.templateAllocatorErrorDefs;
-}
-
-aspect production nilConstructor
-top::ConstructorList ::=
-{
-  top.templateAllocatorDefs = [];
-  top.templateAllocatorErrorDefs = [];
-}
+monoid attribute templateAllocatorDefs::[Def] with [], ++;
+attribute templateAllocatorDefs occurs on ADTDecl, ConstructorList, Constructor;
+monoid attribute templateAllocatorErrorDefs::[Def] with [], ++;
+attribute templateAllocatorErrorDefs occurs on ADTDecl, ConstructorList, Constructor;
 
 aspect production constructor
 top::Constructor ::= n::Name ps::Parameters
 {
-  top.templateAllocatorDefs =
+  top.templateAllocatorDefs :=
     [templateDef(
        allocateConstructorName,
        constructorTemplateItem(
@@ -82,7 +63,7 @@ top::Constructor ::= n::Name ps::Parameters
          templateAllocateConstructorInstDecl(
            name(top.adtGivenName, location=builtin),
            top.allocatorName, n, _, top.templateParameters.asTemplateArgNames, ps)))];
-  top.templateAllocatorErrorDefs = [templateDef(allocateConstructorName, errorTemplateItem())];
+  top.templateAllocatorErrorDefs := [templateDef(allocateConstructorName, errorTemplateItem())];
 }
 
 abstract production constructorTemplateItem
