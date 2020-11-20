@@ -1,9 +1,13 @@
 grammar edu:umn:cs:melt:exts:ableC:templateAlgebraicDataTypes:allocation:abstractsyntax;
 
 abstract production templateAllocateDecl
-top::Decl ::= id::Name  allocator::Name
+top::Decl ::= id::Name  allocator::Name pfx::Maybe<Name>
 {
-  top.pp = pp"template allocate datatype ${id.pp} with ${allocator.pp};";
+  top.pp =
+    case pfx of
+    | just(pfx) -> pp"template allocate datatype ${id.pp} with ${allocator.pp} prefix ${pfx.pp};"
+    | nothing() -> pp"template allocate datatype ${id.pp} with ${allocator.pp};"
+    end;
   
   local expectedAllocatorType::Type =
     functionType(
@@ -37,6 +41,11 @@ top::Decl ::= id::Name  allocator::Name
     | adtTemplateItem(params, adt) :: _ -> params
     end;
   d.allocatorName = allocator;
+  d.allocatePfx =
+    case pfx of
+    | just(pfx) -> pfx.name
+    | nothing() -> allocator.name ++ "_"
+    end;
   
   forwards to
     if !null(adtLookupErrors)
