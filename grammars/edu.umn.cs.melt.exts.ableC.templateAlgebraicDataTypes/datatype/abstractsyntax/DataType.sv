@@ -130,7 +130,7 @@ top::Constructor ::= n::Name ps::Parameters
     ableC_Decl {
       template<$TemplateParameters{top.templateParameters}>
       inst $tname{top.adtGivenName}<$TemplateArgNames{top.templateParameters.asTemplateArgNames}>
-        $Name{n}($Parameters{ps}) {
+        $Name{n}($Parameters{ps.asConstructorParameters}) {
         inst $tname{top.adtGivenName}<$TemplateArgNames{top.templateParameters.asTemplateArgNames}>
           result;
         result.tag = $name{top.adtGivenName ++ "_" ++ n.name};
