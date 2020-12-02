@@ -130,7 +130,7 @@ top::Constructor ::= n::Name ps::Parameters
     ableC_Decl {
       template<$TemplateParameters{top.templateParameters}>
       inst $tname{top.adtGivenName}<$TemplateArgNames{top.templateParameters.asTemplateArgNames}>
-        $Name{n}($Parameters{ps.asConstructorParameters}) {
+        $Name{n}($Parameters{ps.asTemplateConstructorParameters}) {
         inst $tname{top.adtGivenName}<$TemplateArgNames{top.templateParameters.asTemplateArgNames}>
           result;
         result.tag = $name{top.adtGivenName ++ "_" ++ n.name};
@@ -171,4 +171,14 @@ top::TemplateParameter ::= bty::BaseTypeExpr n::Name mty::TypeModifierExpr
 {
   top.asTemplateArgName =
     valueTemplateArgName(declRefExpr(n, location=n.location), location=n.location);
+}
+
+functor attribute asTemplateConstructorParameters occurs on Parameters, ParameterDecl;
+flowtype asTemplateConstructorParameters {decorate} on Parameters, ParameterDecl;
+propagate asTemplateConstructorParameters on Parameters;
+
+aspect production parameterDecl
+top::ParameterDecl ::= storage::StorageClasses  bty::BaseTypeExpr  mty::TypeModifierExpr  n::MaybeName  attrs::Attributes
+{
+  top.asTemplateConstructorParameters = parameterDecl(storage, bty, mty, justName(fieldName), attrs);
 }
