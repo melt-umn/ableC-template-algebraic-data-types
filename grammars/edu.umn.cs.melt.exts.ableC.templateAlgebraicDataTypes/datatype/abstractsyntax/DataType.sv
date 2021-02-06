@@ -45,6 +45,8 @@ top::Decl ::= adtName::String adtDeclName::String adt::ADTDecl
     };
   typeDecl.env = top.env;
   typeDecl.returnType = top.returnType;
+  typeDecl.breakValid = top.breakValid;
+  typeDecl.continueValid = top.continueValid;
   typeDecl.isTopLevel = top.isTopLevel;
   local typeDeclDefs::[Def] =
     [valueDef(adtDeclName, head(foldr(consDefs, nilDefs(), typeDecl.defs).valueContribs).snd)];
@@ -63,7 +65,7 @@ synthesized attribute templateTransform :: Decl occurs on ADTDecl;
 synthesized attribute instDecl :: (Decl ::= Name) occurs on ADTDecl;
 synthesized attribute instDeclTransform :: Decls occurs on ADTDecl;
 
-flowtype ADTDecl = templateADTRedeclarationCheck {env, returnType}, templateTransform {env, returnType, templateParameters, givenRefId, adtGivenName}, instDecl {}, instDeclTransform {decorate, adtGivenName};
+flowtype ADTDecl = templateADTRedeclarationCheck {env, returnType, breakValid, continueValid}, templateTransform {env, returnType, breakValid, continueValid, templateParameters, givenRefId, adtGivenName}, instDecl {}, instDeclTransform {decorate, adtGivenName};
 
 aspect production adtDecl
 top::ADTDecl ::= attrs::Attributes n::Name cs::ConstructorList

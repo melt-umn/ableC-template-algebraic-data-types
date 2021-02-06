@@ -35,6 +35,8 @@ top::Decl ::= id::Name  allocator::Name pfx::Maybe<Name>
   local d::ADTDecl = new(adtLookup);
   d.env = adtLookup.env;
   d.returnType = adtLookup.returnType;
+  d.breakValid = adtLookup.breakValid;
+  d.continueValid = adtLookup.continueValid;
   d.adtGivenName = adtLookup.adtGivenName;
   d.templateParameters =
     case lookupTemplate(id.name, top.env) of
@@ -122,7 +124,7 @@ top::Expr ::= adtName::Name allocatorName::Name constructorName::Name ts::Templa
   
   args.expectedTypes = paramTypes;
   args.argumentPosition = 1;
-  args.callExpr = decorate declRefExpr(n, location=n.location) with {env = top.env; returnType = top.returnType;};
+  args.callExpr = decorate declRefExpr(n, location=n.location) with {env = top.env; returnType = top.returnType; breakValid = top.breakValid; continueValid = top.continueValid;};
   args.callVariadic = false;
   
   local resultName::String = "result_" ++ toString(genInt());
