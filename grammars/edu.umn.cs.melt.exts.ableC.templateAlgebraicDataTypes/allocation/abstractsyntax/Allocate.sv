@@ -30,6 +30,7 @@ top::Decl ::= id::Name  allocator::Name pfx::Maybe<Name>
   local adtLookup::Decorated ADTDecl =
     case lookupTemplate(id.name, top.env) of
     | adtTemplateItem(params, adt) :: _ -> adt
+    | _ -> error("adtLookup demanded when lookup failed")
     end;
   -- Re-decorate the found ADT decl, also supplying the allocator name
   local d::ADTDecl = new(adtLookup);
@@ -41,6 +42,7 @@ top::Decl ::= id::Name  allocator::Name pfx::Maybe<Name>
   d.templateParameters =
     case lookupTemplate(id.name, top.env) of
     | adtTemplateItem(params, adt) :: _ -> params
+    | _ -> error("adt template parameters demanded when lookup failed")
     end;
   d.allocatorName = allocator;
   d.allocatePfx =
