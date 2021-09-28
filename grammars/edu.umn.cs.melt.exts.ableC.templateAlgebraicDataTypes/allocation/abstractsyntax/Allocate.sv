@@ -1,9 +1,13 @@
 grammar edu:umn:cs:melt:exts:ableC:templateAlgebraicDataTypes:allocation:abstractsyntax;
 
 abstract production templateAllocateDecl
-top::Decl ::= id::Name  allocator::Name
+top::Decl ::= id::Name  allocator::Name pfx::Maybe<Name>
 {
-  top.pp = pp"template allocate datatype ${id.pp} with ${allocator.pp};";
+  top.pp =
+    case pfx of
+    | just(pfx) -> pp"template allocate datatype ${id.pp} with ${allocator.pp} prefix ${pfx.pp};"
+    | nothing() -> pp"template allocate datatype ${id.pp} with ${allocator.pp};"
+    end;
   
   local expectedAllocatorType::Type =
     functionType(
@@ -26,17 +30,24 @@ top::Decl ::= id::Name  allocator::Name
   local adtLookup::Decorated ADTDecl =
     case lookupTemplate(id.name, top.env) of
     | adtTemplateItem(params, adt) :: _ -> adt
+    | _ -> error("adtLookup demanded when lookup failed")
     end;
   -- Re-decorate the found ADT decl, also supplying the allocator name
   local d::ADTDecl = new(adtLookup);
   d.env = adtLookup.env;
-  d.returnType = adtLookup.returnType;
+  d.controlStmtContext = adtLookup.controlStmtContext;
   d.adtGivenName = adtLookup.adtGivenName;
   d.templateParameters =
     case lookupTemplate(id.name, top.env) of
     | adtTemplateItem(params, adt) :: _ -> params
+    | _ -> error("adt template parameters demanded when lookup failed")
     end;
   d.allocatorName = allocator;
+  d.allocatePfx =
+    case pfx of
+    | just(pfx) -> pfx.name
+    | nothing() -> allocator.name ++ "_"
+    end;
   
   forwards to
     if !null(adtLookupErrors)
@@ -113,7 +124,7 @@ top::Expr ::= adtName::Name allocatorName::Name constructorName::Name ts::Templa
   
   args.expectedTypes = paramTypes;
   args.argumentPosition = 1;
-  args.callExpr = decorate declRefExpr(n, location=n.location) with {env = top.env; returnType = top.returnType;};
+  args.callExpr = decorate declRefExpr(n, location=n.location) with {env = top.env; controlStmtContext = top.controlStmtContext;};
   args.callVariadic = false;
   
   local resultName::String = "result_" ++ toString(genInt());
