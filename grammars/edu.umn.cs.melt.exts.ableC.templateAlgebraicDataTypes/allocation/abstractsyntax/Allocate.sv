@@ -127,7 +127,7 @@ top::Expr ::= adtName::Name allocatorName::Name constructorName::Name ts::Templa
   args.callExpr = decorate declRefExpr(n, location=n.location) with {env = top.env; controlStmtContext = top.controlStmtContext;};
   args.callVariadic = false;
   
-  local resultName::String = "result_" ++ toString(genInt());
+  local resultName::String = "result_" ++ toString(genIntT());
   local fwrd::Expr =
     ableC_Expr {
       ({inst $TName{adtName}<$TemplateArgNames{ts}> *$name{resultName} = $Name{allocatorName}(sizeof(inst $TName{adtName}<$TemplateArgNames{ts}>));
