@@ -44,7 +44,7 @@ top::Decl ::= adtName::String adtDeclName::String adt::ADTDecl
         $name{adtDeclName};
     };
   typeDecl.env = top.env;
-  typeDecl.returnType = top.returnType;
+  typeDecl.controlStmtContext = top.controlStmtContext;
   typeDecl.isTopLevel = top.isTopLevel;
   local typeDeclDefs::[Def] =
     [valueDef(adtDeclName, head(foldr(consDefs, nilDefs(), typeDecl.defs).valueContribs).snd)];
@@ -63,7 +63,7 @@ synthesized attribute templateTransform :: Decl occurs on ADTDecl;
 synthesized attribute instDecl :: (Decl ::= Name) occurs on ADTDecl;
 synthesized attribute instDeclTransform :: Decls occurs on ADTDecl;
 
-flowtype ADTDecl = templateADTRedeclarationCheck {env, returnType}, templateTransform {env, returnType, templateParameters, givenRefId, adtGivenName}, instDecl {}, instDeclTransform {decorate, adtGivenName};
+flowtype ADTDecl = templateADTRedeclarationCheck {env, controlStmtContext}, templateTransform {env, controlStmtContext, templateParameters, givenRefId, adtGivenName}, instDecl {}, instDeclTransform {decorate, adtGivenName};
 
 aspect production adtDecl
 top::ADTDecl ::= attrs::Attributes n::Name cs::ConstructorList
@@ -130,7 +130,7 @@ top::Constructor ::= n::Name ps::Parameters
     ableC_Decl {
       template<$TemplateParameters{top.templateParameters}>
       inst $tname{top.adtGivenName}<$TemplateArgNames{top.templateParameters.asTemplateArgNames}>
-        $Name{n}($Parameters{ps}) {
+        $Name{n}($Parameters{ps.asTemplateConstructorParameters}) {
         inst $tname{top.adtGivenName}<$TemplateArgNames{top.templateParameters.asTemplateArgNames}>
           result;
         result.tag = $name{top.adtGivenName ++ "_" ++ n.name};
@@ -171,4 +171,14 @@ top::TemplateParameter ::= bty::BaseTypeExpr n::Name mty::TypeModifierExpr
 {
   top.asTemplateArgName =
     valueTemplateArgName(declRefExpr(n, location=n.location), location=n.location);
+}
+
+functor attribute asTemplateConstructorParameters occurs on Parameters, ParameterDecl;
+flowtype asTemplateConstructorParameters {decorate} on Parameters, ParameterDecl;
+propagate asTemplateConstructorParameters on Parameters;
+
+aspect production parameterDecl
+top::ParameterDecl ::= storage::StorageClasses  bty::BaseTypeExpr  mty::TypeModifierExpr  n::MaybeName  attrs::Attributes
+{
+  top.asTemplateConstructorParameters = parameterDecl(storage, bty, mty, justName(fieldName), attrs);
 }
