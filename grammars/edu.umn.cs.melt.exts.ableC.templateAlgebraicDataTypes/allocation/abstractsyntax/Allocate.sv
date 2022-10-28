@@ -8,6 +8,7 @@ top::Decl ::= id::Name  allocator::Name pfx::Maybe<Name>
     | just(pfx) -> pp"template allocate datatype ${id.pp} with ${allocator.pp} prefix ${pfx.pp};"
     | nothing() -> pp"template allocate datatype ${id.pp} with ${allocator.pp};"
     end;
+  propagate env;
   
   local expectedAllocatorType::Type =
     functionType(
@@ -93,6 +94,7 @@ abstract production templateAllocateConstructorInstDecl
 top::Decl ::= adtName::Name allocatorName::Name constructorName::Name n::Name ts::TemplateArgNames ps::Parameters
 {
   top.pp = pp"templateAllocateConstructorInstDecl ${n.pp};";
+  propagate env, controlStmtContext;
   
   ps.position = 0;
   forwards to
@@ -120,6 +122,8 @@ abstract production templateAllocateConstructorInstCallExpr
 top::Expr ::= adtName::Name allocatorName::Name constructorName::Name ts::TemplateArgNames paramTypes::[Type] n::Name args::Exprs
 {
   top.pp = parens(ppConcat([n.pp, parens(ppImplode(cat(comma(), space()), args.pps))]));
+  propagate env, controlStmtContext;
+
   local localErrors::[Message] = args.errors ++ args.argumentErrors;
   
   args.expectedTypes = paramTypes;

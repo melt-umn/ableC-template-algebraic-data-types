@@ -6,6 +6,7 @@ top::Decl ::= params::TemplateParameters adt::ADTDecl
   top.pp = ppConcat([
     pp"template<", ppImplode(text(", "), params.pps), pp">", line(),
     text("datatype"), space(), adt.pp, semi()]);
+  propagate env, isTopLevel, controlStmtContext;
   
   adt.templateParameters = params;
   adt.adtGivenName = adt.name;
@@ -31,6 +32,7 @@ abstract production templateDatatypeInstDecl
 top::Decl ::= adtName::String adtDeclName::String adt::ADTDecl
 {
   top.pp = ppConcat([ text("inst_datatype"), space(), adt.pp ]);
+  propagate isTopLevel, controlStmtContext;
   
   local refId::String = s"edu:umn:cs:melt:exts:ableC:templating:${adtDeclName}";
   -- adt may potentially contain type expressions referencing the adt currently being defined.
@@ -55,7 +57,7 @@ top::Decl ::= adtName::String adtDeclName::String adt::ADTDecl
   forwards to decls(adt.instDeclTransform);
 }
 
-autocopy attribute templateParameters :: TemplateParameters occurs on ADTDecl, ConstructorList, Constructor;
+inherited attribute templateParameters :: TemplateParameters occurs on ADTDecl, ConstructorList, Constructor;
 inherited attribute declTypeName :: String occurs on ADTDecl;
 
 synthesized attribute templateADTRedeclarationCheck::[Message] occurs on ADTDecl;
@@ -64,6 +66,8 @@ synthesized attribute instDecl :: (Decl ::= Name) occurs on ADTDecl;
 synthesized attribute instDeclTransform :: Decls occurs on ADTDecl;
 
 flowtype ADTDecl = templateADTRedeclarationCheck {env, controlStmtContext}, templateTransform {env, controlStmtContext, templateParameters, givenRefId, adtGivenName}, instDecl {}, instDeclTransform {decorate, adtGivenName};
+
+propagate templateParameters on ADTDecl, ConstructorList, Constructor;
 
 aspect production adtDecl
 top::ADTDecl ::= attrs::Attributes n::Name cs::ConstructorList
