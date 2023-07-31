@@ -27,7 +27,7 @@ action {
     context =
       addIdentsToScope(
         map(
-          \ c::String -> name(alloc.ast.name ++ "_" ++ c, location=id.location),
+          \ c::String -> name(alloc.ast.name ++ "_" ++ c),
           constructors.fromJust),
         TemplateIdentifier_t,
         context);
@@ -44,7 +44,7 @@ action {
     context =
       addIdentsToScope(
         map(
-          \ c::String -> name(pfx.ast.name ++ c, location=id.location),
+          \ c::String -> name(pfx.ast.name ++ c),
           constructors.fromJust),
         TemplateIdentifier_t,
         context);

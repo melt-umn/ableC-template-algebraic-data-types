@@ -16,7 +16,7 @@ top::Decl ::= params::TemplateParameters adt::ADTDecl
   
   local localErrors::[Message] =
     if !top.isTopLevel
-    then [err(adt.location, "Template declarations must be global")]
+    then [errFromOrigin(adt, "Template declarations must be global")]
     else adt.templateADTRedeclarationCheck ++ params.errors;
   
   forwards to
@@ -79,7 +79,7 @@ top::ADTDecl ::= attrs::Attributes n::Name cs::ConstructorList
       templateDatatypeInstDecl(
         n.name, mangledName.name,
         -- Discard attributes, since we don't allow specifying refIds on templated types anyway
-        adtDecl(nilAttribute(), mangledName, cs, location=top.location));
+        adtDecl(nilAttribute(), mangledName, cs));
   
   -- Evaluated on substituted version of the tree
   top.instDeclTransform =
@@ -166,15 +166,14 @@ top::TemplateParameter ::= n::Name
 {
   top.asTemplateArgName =
     typeTemplateArgName(
-      typeName(typedefTypeExpr(nilQualifier(), n), baseTypeExpr()),
-      location=n.location);
+      typeName(typedefTypeExpr(nilQualifier(), n), baseTypeExpr()));
 }
 
 aspect production valueTemplateParameter
 top::TemplateParameter ::= bty::BaseTypeExpr n::Name mty::TypeModifierExpr
 {
   top.asTemplateArgName =
-    valueTemplateArgName(declRefExpr(n, location=n.location), location=n.location);
+    valueTemplateArgName(declRefExpr(n));
 }
 
 functor attribute asTemplateConstructorParameters occurs on Parameters, ParameterDecl;

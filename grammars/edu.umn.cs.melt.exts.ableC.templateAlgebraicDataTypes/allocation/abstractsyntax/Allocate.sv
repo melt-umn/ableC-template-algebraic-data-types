@@ -20,12 +20,12 @@ top::Decl ::= id::Name  allocator::Name pfx::Maybe<Name>
   local adtLookupErrors::[Message] =
     case lookupTemplate(id.name, top.env) of
     | adtTemplateItem(params, adt) :: _ -> []
-    | _ -> [err(id.location, id.name ++ " is not a template datatype")]
+    | _ -> [errFromOrigin(id, id.name ++ " is not a template datatype")]
     end;
   local localErrors::[Message] =
     adtLookupErrors ++ allocator.valueLookupCheck ++
     (if !compatibleTypes(expectedAllocatorType, allocator.valueItem.typerep, true, false)
-     then [err(allocator.location, s"Allocator must have type void *(unsigned long) (got ${showType(allocator.valueItem.typerep)})")]
+     then [errFromOrigin(allocator, s"Allocator must have type void *(unsigned long) (got ${showType(allocator.valueItem.typerep)})")]
      else []);
   
   local adtLookup::Decorated ADTDecl =
@@ -71,22 +71,20 @@ top::Constructor ::= n::Name ps::Parameters
     [templateDef(
        allocateConstructorName,
        constructorTemplateItem(
-         n.location, -- TODO: location should be allocate decl location
          top.templateParameters.names, top.templateParameters.kinds, ps,
          templateAllocateConstructorInstDecl(
-           name(top.adtGivenName, location=builtin),
+           name(top.adtGivenName),
            top.allocatorName, n, _, top.templateParameters.asTemplateArgNames, ps)))];
   top.templateAllocatorErrorDefs := [templateDef(allocateConstructorName, errorTemplateItem())];
 }
 
 abstract production constructorTemplateItem
-top::TemplateItem ::= sourceLocation::Location params::[String] kinds::[Maybe<TypeName>] constructorParams::Parameters decl::(Decl ::= Name)
+top::TemplateItem ::= params::[String] kinds::[Maybe<TypeName>] constructorParams::Parameters decl::(Decl ::= Name)
 {
   top.templateParams = params;
   top.kinds = kinds;
   top.decl = decl;
   top.maybeParameters = just(constructorParams);
-  top.sourceLocation = sourceLocation;
   top.isItemValue = true;
 }
 
@@ -110,12 +108,11 @@ top::ValueItem ::= adtName::Name allocatorName::Name constructorName::Name ts::T
 {
   top.pp = pp"templateAllocateConstructorInstValueItem(${adtName.pp}, ${allocatorName.pp}, ${constructorName.pp})";
   top.typerep = errorType();
-  top.sourceLocation = allocatorName.location;
   top.directRefHandler =
-    \ n::Name l::Location ->
-      errorExpr([err(l, s"Allocate constructor ${allocatorName.name}_${adtName.name}<${show(80, ppImplode(pp", ", ts.pps))}> cannot be referenced, only called directly")], location=builtin);
+    \ n::Name ->
+      errorExpr([errFromOrigin(n, s"Allocate constructor ${allocatorName.name}_${adtName.name}<${show(80, ppImplode(pp", ", ts.pps))}> cannot be referenced, only called directly")]);
   top.directCallHandler =
-    templateAllocateConstructorInstCallExpr(adtName, allocatorName, constructorName, ts, paramTypes, _, _, location=_);
+    templateAllocateConstructorInstCallExpr(adtName, allocatorName, constructorName, ts, paramTypes, _, _);
 }
 
 abstract production templateAllocateConstructorInstCallExpr
@@ -128,7 +125,7 @@ top::Expr ::= adtName::Name allocatorName::Name constructorName::Name ts::Templa
   
   args.expectedTypes = paramTypes;
   args.argumentPosition = 1;
-  args.callExpr = decorate declRefExpr(n, location=n.location) with {env = top.env; controlStmtContext = top.controlStmtContext;};
+  args.callExpr = decorate declRefExpr(n) with {env = top.env; controlStmtContext = top.controlStmtContext;};
   args.callVariadic = false;
   
   local resultName::String = "result_" ++ toString(genInt());
