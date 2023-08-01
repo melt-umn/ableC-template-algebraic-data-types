@@ -32,6 +32,7 @@ abstract production templateDatatypeInstDecl
 top::Decl ::= adtName::String adtDeclName::String adt::ADTDecl
 {
   top.pp = ppConcat([ text("inst_datatype"), space(), adt.pp ]);
+  attachNote extensionGenerated("ableC-template-algebraic-data-types");
   propagate isTopLevel, controlStmtContext;
   
   local refId::String = s"edu:umn:cs:melt:exts:ableC:templating:${adtDeclName}";
@@ -72,6 +73,7 @@ propagate templateParameters on ADTDecl, ConstructorList, Constructor;
 aspect production adtDecl
 top::ADTDecl ::= attrs::Attributes n::Name cs::ConstructorList
 {
+  attachNote extensionGenerated("ableC-template-algebraic-data-types");
   top.templateADTRedeclarationCheck = n.templateRedeclarationCheck;
   top.templateTransform = decls(consDecl(adtEnumDecl, cs.templateFunDecls));
   top.instDecl =
@@ -130,6 +132,7 @@ flowtype Constructor = templateFunDecl {decorate, templateParameters, adtGivenNa
 aspect production constructor
 top::Constructor ::= n::Name ps::Parameters
 {
+  attachNote extensionGenerated("ableC-template-algebraic-data-types");
   top.templateFunDecl =
     ableC_Decl {
       template<$TemplateParameters{top.templateParameters}>
@@ -164,6 +167,7 @@ synthesized attribute asTemplateArgName::TemplateArgName occurs on TemplateParam
 aspect production typeTemplateParameter
 top::TemplateParameter ::= n::Name
 {
+  attachNote extensionGenerated("ableC-template-algebraic-data-types");
   top.asTemplateArgName =
     typeTemplateArgName(
       typeName(typedefTypeExpr(nilQualifier(), n), baseTypeExpr()));
@@ -172,6 +176,7 @@ top::TemplateParameter ::= n::Name
 aspect production valueTemplateParameter
 top::TemplateParameter ::= bty::BaseTypeExpr n::Name mty::TypeModifierExpr
 {
+  attachNote extensionGenerated("ableC-template-algebraic-data-types");
   top.asTemplateArgName =
     valueTemplateArgName(declRefExpr(n));
 }
@@ -183,5 +188,6 @@ propagate asTemplateConstructorParameters on Parameters;
 aspect production parameterDecl
 top::ParameterDecl ::= storage::StorageClasses  bty::BaseTypeExpr  mty::TypeModifierExpr  n::MaybeName  attrs::Attributes
 {
+  attachNote extensionGenerated("ableC-template-algebraic-data-types");
   top.asTemplateConstructorParameters = parameterDecl(storage, bty, mty, justName(fieldName), attrs);
 }

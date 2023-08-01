@@ -119,6 +119,7 @@ abstract production templateAllocateConstructorInstCallExpr
 top::Expr ::= adtName::Name allocatorName::Name constructorName::Name ts::TemplateArgNames paramTypes::[Type] n::Name args::Exprs
 {
   top.pp = parens(ppConcat([n.pp, parens(ppImplode(cat(comma(), space()), args.pps))]));
+  attachNote extensionGenerated("ableC-template-algebraic-data-types");
   propagate env, controlStmtContext;
 
   local localErrors::[Message] = args.errors ++ args.argumentErrors;
