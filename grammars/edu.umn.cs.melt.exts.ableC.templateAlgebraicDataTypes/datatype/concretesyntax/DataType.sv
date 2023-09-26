@@ -31,7 +31,7 @@ terminal TemplateDatatype_t 'datatype' lexer classes {Keyword, Global};
 --}
 aspect parser attribute globalPreferences
   action {
-    globalPreferences = pair([TemplateDatatype_t, Datatype_t], TemplateDatatype_t) :: globalPreferences;
+    globalPreferences = ([TemplateDatatype_t, Datatype_t], TemplateDatatype_t) :: globalPreferences;
   };
 
 concrete production templateADTDecl_c
@@ -43,7 +43,7 @@ action {
   context = closeScope(context); -- Opened by TypeParameters_c
   context = addIdentsToScope([d.declaredIdent], TemplateTypeName_t, context);
   context = addIdentsToScope(cs.constructorNames, TemplateIdentifier_t, context);
-  adtConstructors = pair(d.declaredIdent.name, map((.name), cs.constructorNames)) :: adtConstructors;
+  adtConstructors = (d.declaredIdent.name, map((.name), cs.constructorNames)) :: adtConstructors;
 }
 
 concrete production templateADTForwardDecl_c
