@@ -16,7 +16,7 @@ top::Decl ::= params::TemplateParameters adt::ADTDecl
   
   local localErrors::[Message] =
     if !top.isTopLevel
-    then [err(adt.location, "Template declarations must be global")]
+    then [errFromOrigin(adt, "Template declarations must be global")]
     else adt.templateADTRedeclarationCheck ++ params.errors;
   
   forwards to
@@ -32,6 +32,7 @@ abstract production templateDatatypeInstDecl
 top::Decl ::= adtName::String adtDeclName::String adt::ADTDecl
 {
   top.pp = ppConcat([ text("inst_datatype"), space(), adt.pp ]);
+  attachNote extensionGenerated("ableC-template-algebraic-data-types");
   propagate isTopLevel, controlStmtContext;
   
   local refId::String = s"edu:umn:cs:melt:exts:ableC:templating:${adtDeclName}";
@@ -72,6 +73,7 @@ propagate templateParameters on ADTDecl, ConstructorList, Constructor;
 aspect production adtDecl
 top::ADTDecl ::= attrs::Attributes n::Name cs::ConstructorList
 {
+  attachNote extensionGenerated("ableC-template-algebraic-data-types");
   top.templateADTRedeclarationCheck = n.templateRedeclarationCheck;
   top.templateTransform = decls(consDecl(adtEnumDecl, cs.templateFunDecls));
   top.instDecl =
@@ -79,7 +81,7 @@ top::ADTDecl ::= attrs::Attributes n::Name cs::ConstructorList
       templateDatatypeInstDecl(
         n.name, mangledName.name,
         -- Discard attributes, since we don't allow specifying refIds on templated types anyway
-        adtDecl(nilAttribute(), mangledName, cs, location=top.location));
+        adtDecl(nilAttribute(), mangledName, cs));
   
   -- Evaluated on substituted version of the tree
   top.instDeclTransform =
@@ -130,6 +132,7 @@ flowtype Constructor = templateFunDecl {decorate, templateParameters, adtGivenNa
 aspect production constructor
 top::Constructor ::= n::Name ps::Parameters
 {
+  attachNote extensionGenerated("ableC-template-algebraic-data-types");
   top.templateFunDecl =
     ableC_Decl {
       template<$TemplateParameters{top.templateParameters}>
@@ -164,17 +167,18 @@ synthesized attribute asTemplateArgName::TemplateArgName occurs on TemplateParam
 aspect production typeTemplateParameter
 top::TemplateParameter ::= n::Name
 {
+  attachNote extensionGenerated("ableC-template-algebraic-data-types");
   top.asTemplateArgName =
     typeTemplateArgName(
-      typeName(typedefTypeExpr(nilQualifier(), n), baseTypeExpr()),
-      location=n.location);
+      typeName(typedefTypeExpr(nilQualifier(), n), baseTypeExpr()));
 }
 
 aspect production valueTemplateParameter
 top::TemplateParameter ::= bty::BaseTypeExpr n::Name mty::TypeModifierExpr
 {
+  attachNote extensionGenerated("ableC-template-algebraic-data-types");
   top.asTemplateArgName =
-    valueTemplateArgName(declRefExpr(n, location=n.location), location=n.location);
+    valueTemplateArgName(declRefExpr(n));
 }
 
 functor attribute asTemplateConstructorParameters occurs on Parameters, ParameterDecl;
@@ -184,5 +188,6 @@ propagate asTemplateConstructorParameters on Parameters;
 aspect production parameterDecl
 top::ParameterDecl ::= storage::StorageClasses  bty::BaseTypeExpr  mty::TypeModifierExpr  n::MaybeName  attrs::Attributes
 {
+  attachNote extensionGenerated("ableC-template-algebraic-data-types");
   top.asTemplateConstructorParameters = parameterDecl(storage, bty, mty, justName(fieldName), attrs);
 }

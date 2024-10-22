@@ -56,7 +56,7 @@ action {
   context = addIdentsToScope([d.declaredIdent], TemplateTypeName_t, context);
 }
 
-nonterminal TemplateInitialDatatypeDeclaration_c with ast<(Decl ::= ConstructorList)>, declaredIdent, location;
+tracked nonterminal TemplateInitialDatatypeDeclaration_c with ast<(Decl ::= ConstructorList)>, declaredIdent;
 
 concrete production templateInitialDatatypeDeclaration_c
 top::TemplateInitialDatatypeDeclaration_c ::=
@@ -64,7 +64,7 @@ top::TemplateInitialDatatypeDeclaration_c ::=
 {
   top.ast =
     \ cs::ConstructorList ->
-      templateDatatypeDecl(params.ast, adtDecl(nilAttribute(), id.ast, cs, location=top.location));
+      templateDatatypeDecl(params.ast, adtDecl(nilAttribute(), id.ast, cs));
   top.declaredIdent = id.ast;
 }
 action {
