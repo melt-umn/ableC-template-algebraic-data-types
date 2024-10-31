@@ -13,21 +13,24 @@ top::Decl ::= params::TemplateParameters adt::ADTDecl
   -- Not really used, only needed (possibly) to compute an environment for
   -- ParameterDecl to use to forward
   adt.givenRefId = nothing();
+  -- We don't use adt.transform in the forward for this production,
+  -- but these inherited attributes are expected to be supplied through it:
+  adt.transform.env = top.env;
+  adt.transform.isTopLevel = top.isTopLevel;
+  adt.transform.controlStmtContext = top.controlStmtContext;
   
   local localErrors::[Message] =
     if !top.isTopLevel
     then [errFromOrigin(adt, "Template declarations must be global")]
     else adt.templateADTRedeclarationCheck ++ params.errors;
-  
+
   forwards to
-    decls(
-      foldDecl([
-        defsDecl([templateDef(adt.name, adtTemplateItem(params, adt))]),
-        if null(localErrors)
-        then adt.templateTransform
-        else warnDecl(localErrors)]));
+    if null(localErrors)
+    then @adt.templateTransform
+    else warnDecl(localErrors);
 }
 
+-- This is is the declaration on which the substitution is performed
 abstract production templateDatatypeInstDecl
 top::Decl ::= adtName::String adtDeclName::String adt::ADTDecl
 {
@@ -54,19 +57,26 @@ top::Decl ::= adtName::String adtDeclName::String adt::ADTDecl
   
   adt.givenRefId = just(refId);
   adt.adtGivenName = adtName;
-  adt.env = addEnv(typeDeclDefs, top.env);
-  forwards to decls(adt.instDeclTransform);
+  -- We don't use adt.transform in the forward for this production,
+  -- but these inherited attributes are expected to be supplied through it:
+  adt.transform.env = top.env;
+  adt.transform.isTopLevel = top.isTopLevel;
+  adt.transform.controlStmtContext = top.controlStmtContext;
+  forwards to decls(@adt.instDeclTransform);
 }
 
-inherited attribute templateParameters :: TemplateParameters occurs on ADTDecl, ConstructorList, Constructor;
+inherited attribute templateParameters :: Decorated TemplateParameters occurs on ADTDecl, ConstructorList, Constructor;
 inherited attribute declTypeName :: String occurs on ADTDecl;
 
 synthesized attribute templateADTRedeclarationCheck::[Message] occurs on ADTDecl;
-synthesized attribute templateTransform :: Decl occurs on ADTDecl;
+translation attribute templateTransform :: Decl occurs on ADTDecl;
 synthesized attribute instDecl :: (Decl ::= Name) occurs on ADTDecl;
-synthesized attribute instDeclTransform :: Decls occurs on ADTDecl;
+translation attribute instDeclTransform :: Decls occurs on ADTDecl;
 
-flowtype ADTDecl = templateADTRedeclarationCheck {env, controlStmtContext}, templateTransform {env, controlStmtContext, templateParameters, givenRefId, adtGivenName}, instDecl {}, instDeclTransform {decorate, adtGivenName};
+flowtype ADTDecl =
+  templateADTRedeclarationCheck {decorate},
+  templateTransform {decorate, templateParameters},
+  instDecl {}, instDeclTransform {decorate};
 
 propagate templateParameters on ADTDecl, ConstructorList, Constructor;
 
@@ -75,31 +85,41 @@ top::ADTDecl ::= attrs::Attributes n::Name cs::ConstructorList
 {
   attachNote extensionGenerated("ableC-template-algebraic-data-types");
   top.templateADTRedeclarationCheck = n.templateRedeclarationCheck;
-  top.templateTransform = decls(consDecl(adtEnumDecl, cs.templateFunDecls));
+
+  production attribute templateAdtDecls::Decls with appendDecls;
+  templateAdtDecls := nilDecl();
+  -- Seed the flowtype
+  templateAdtDecls <- if false then error(hackUnparse(top.transform.env) ++ hackUnparse(top.transform.controlStmtContext) ++ hackUnparse(top.givenRefId) ++ top.adtGivenName ++ hackUnparse(top.templateParameters)) else nilDecl();
+
+  top.templateTransform = decls(
+    ableC_Decls {
+      $Decl{defsDecl([templateDef(n.name, adtTemplateItem(top.templateParameters, top))])}
+      $Decl{^adtEnumDecl}
+      $Decls{cs.templateFunDecls}
+      $Decls{@templateAdtDecls}
+    });
   top.instDecl =
     \ mangledName::Name ->
       templateDatatypeInstDecl(
         n.name, mangledName.name,
         -- Discard attributes, since we don't allow specifying refIds on templated types anyway
-        adtDecl(nilAttribute(), mangledName, cs));
+        adtDecl(nilAttribute(), mangledName, ^cs));
   
   -- Evaluated on substituted version of the tree
   top.instDeclTransform =
     ableC_Decls {
       $Decl{defsDecl(preDefs)}
-      typedef $BaseTypeExpr{adtTypeExpr} $Name{n};
+      typedef $BaseTypeExpr{adtTypeExpr} $Name{^n};
       $Decl{
         foldr(
           deferredDecl,
           -- Only declare the adt struct, etc. if the datatype doesn't already have a definition
           maybeDecl(
-            \ env::Decorated Env -> null(lookupRefId(top.refId, env)),
+            \ env::Env -> null(lookupRefId(top.refId, env)),
             decls(
               ableC_Decls {
-                $Decl{adtStructDecl}
+                $Decl{^adtStructDecl}
                 $Decl{defsDecl(postDefs)}
-                $Decls{adtProtos}
-                $Decls{adtDecls}
               })),
           catMaybes(
             map(
@@ -135,9 +155,9 @@ top::Constructor ::= n::Name ps::Parameters
   attachNote extensionGenerated("ableC-template-algebraic-data-types");
   top.templateFunDecl =
     ableC_Decl {
-      template<$TemplateParameters{top.templateParameters}>
+      template<$TemplateParameters{^top.templateParameters}>
       inst $tname{top.adtGivenName}<$TemplateArgNames{top.templateParameters.asTemplateArgNames}>
-        $Name{n}($Parameters{ps.asTemplateConstructorParameters}) {
+        $Name{^n}($Parameters{ps.asTemplateConstructorParameters}) {
         inst $tname{top.adtGivenName}<$TemplateArgNames{top.templateParameters.asTemplateArgNames}>
           result;
         result.tag = $name{top.adtGivenName ++ "_" ++ n.name};
@@ -170,7 +190,7 @@ top::TemplateParameter ::= n::Name
   attachNote extensionGenerated("ableC-template-algebraic-data-types");
   top.asTemplateArgName =
     typeTemplateArgName(
-      typeName(typedefTypeExpr(nilQualifier(), n), baseTypeExpr()));
+      typeName(typedefTypeExpr(nilQualifier(), ^n), baseTypeExpr()));
 }
 
 aspect production valueTemplateParameter
@@ -178,7 +198,7 @@ top::TemplateParameter ::= bty::BaseTypeExpr n::Name mty::TypeModifierExpr
 {
   attachNote extensionGenerated("ableC-template-algebraic-data-types");
   top.asTemplateArgName =
-    valueTemplateArgName(declRefExpr(n));
+    valueTemplateArgName(declRefExpr(^n));
 }
 
 functor attribute asTemplateConstructorParameters occurs on Parameters, ParameterDecl;
@@ -189,5 +209,5 @@ aspect production parameterDecl
 top::ParameterDecl ::= storage::StorageClasses  bty::BaseTypeExpr  mty::TypeModifierExpr  n::MaybeName  attrs::Attributes
 {
   attachNote extensionGenerated("ableC-template-algebraic-data-types");
-  top.asTemplateConstructorParameters = parameterDecl(storage, bty, mty, justName(fieldName), attrs);
+  top.asTemplateConstructorParameters = parameterDecl(^storage, ^bty, ^mty, justName(fieldName), ^attrs);
 }

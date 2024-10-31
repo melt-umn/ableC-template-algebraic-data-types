@@ -1,4 +1,4 @@
-grammar artifact;
+grammar edu:umn:cs:melt:exts:ableC:templateAlgebraicDataTypes:artifacts:compiler;
 
 {- This Silver specification does litte more than list the desired
    extensions, albeit in a somewhat stylized way.
@@ -15,12 +15,11 @@ parser extendedParser :: cst:Root {
   edu:umn:cs:melt:ableC:concretesyntax;
   edu:umn:cs:melt:exts:ableC:templateAlgebraicDataTypes;
   edu:umn:cs:melt:exts:ableC:algebraicDataTypes;
-  edu:umn:cs:melt:exts:ableC:templating;
   edu:umn:cs:melt:exts:ableC:string;
+  edu:umn:cs:melt:exts:ableC:constructor;
+  edu:umn:cs:melt:exts:ableC:templateConstructor;
+  edu:umn:cs:melt:exts:ableC:allocation;
+  edu:umn:cs:melt:exts:ableC:templating;
 } 
 
-function main
-IOVal<Integer> ::= args::[String] io_in::IOToken
-{
-  return driver(args, io_in, extendedParser);
-}
+fun main IO<Integer> ::= args::[String] = driver(args, extendedParser);

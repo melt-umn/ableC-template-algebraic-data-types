@@ -1,4 +1,4 @@
-#include <stdlib.h>
+#include <alloca.h>
 
 template<typename a>
 datatype Tree {
@@ -6,8 +6,8 @@ datatype Tree {
   Leaf(a val);
 };
 
-template allocate datatype Tree with malloc prefix m;
+allocate_using stack;
 
 int main() {
-  Tree<int> *a = mNode(mLeaf(0), mLeaf(2));
+  Tree<int> *a = new Node(new Leaf(0), new Leaf(2));
 }
