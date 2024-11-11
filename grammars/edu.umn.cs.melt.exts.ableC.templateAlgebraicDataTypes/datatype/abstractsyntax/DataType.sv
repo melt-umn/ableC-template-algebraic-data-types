@@ -57,9 +57,10 @@ top::Decl ::= adtName::String adtDeclName::String adt::ADTDecl
   
   adt.givenRefId = just(refId);
   adt.adtGivenName = adtName;
+  -- The components of adt are decorated in order to compute the translation.
   -- We don't use adt.transform in the forward for this production,
   -- but these inherited attributes are expected to be supplied through it:
-  adt.transform.env = top.env;
+  adt.transform.env = addEnv(typeDeclDefs, top.env);
   adt.transform.isTopLevel = top.isTopLevel;
   adt.transform.controlStmtContext = top.controlStmtContext;
   forwards to decls(@adt.instDeclTransform);
