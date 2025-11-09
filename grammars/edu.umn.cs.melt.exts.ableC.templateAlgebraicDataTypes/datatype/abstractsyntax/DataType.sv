@@ -90,7 +90,11 @@ top::ADTDecl ::= attrs::Attributes n::Name cs::ConstructorList
   production attribute templateAdtDecls::Decls with appendDecls;
   templateAdtDecls := nilDecl();
   -- Seed the flowtype
-  templateAdtDecls <- if false then error(hackUnparse(top.transform.env) ++ hackUnparse(top.transform.controlStmtContext) ++ hackUnparse(top.givenRefId) ++ top.adtGivenName ++ hackUnparse(top.templateParameters)) else nilDecl();
+  local topDeps::Decorated ADTDecl with {
+    transform.env, transform.controlStmtContext, transform.isTopLevel,
+    givenRefId, adtGivenName, templateParameters
+  } = top;
+  templateAdtDecls <- if false then error(hackUnparse(topDeps)) else nilDecl();
 
   top.templateTransform = decls(
     ableC_Decls {
